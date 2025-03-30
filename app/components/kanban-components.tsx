@@ -1,7 +1,18 @@
-import { useRouter } from 'next/navigation'
-import { Badge } from '@/components/ui/badge'
+import { useDroppable } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useRouter } from 'next/navigation'
+import { Badge } from '@/components/ui/badge'
+
+interface DroppableColumnProps {
+  id: string
+  children: React.ReactNode
+}
+
+interface DraggableOpportunityProps {
+  id: string
+  children: React.ReactNode
+}
 
 interface Option {
   id: number
@@ -19,6 +30,42 @@ interface OpportunityCardProps {
   isDraggable?: boolean
 }
 
+export function DroppableColumn({ id, children }: DroppableColumnProps) {
+  const { setNodeRef } = useDroppable({ id })
+  return <div ref={setNodeRef}>{children}</div>
+}
+
+export function DraggableOpportunity({ id, children }: DraggableOpportunityProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({
+    id,
+    transition: {
+      duration: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    }
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0 : 1
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div {...attributes} {...listeners} className="cursor-move">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export function OpportunityCard({ 
   id, 
   title, 
@@ -29,16 +76,9 @@ export function OpportunityCard({
   isDraggable = false 
 }: OpportunityCardProps) {
   const router = useRouter()
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !isDraggable })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent navigation if clicking the delete button
+    // Prevent navigation if clicking the delete button or drag handle
     if ((e.target as HTMLElement).closest('button')) {
       return
     }
@@ -47,18 +87,10 @@ export function OpportunityCard({
 
   const completedOptions = options.filter(option => option.isComplete)
 
-  const cardProps = isDraggable ? {
-    ref: setNodeRef,
-    style,
-    ...attributes,
-    ...listeners,
-  } : {}
-
   return (
     <div
-      {...cardProps}
       onClick={handleClick}
-      className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
+      className="group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors cursor-pointer"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -78,7 +110,7 @@ export function OpportunityCard({
               e.stopPropagation()
               onDelete(id)
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full z-10"
           >
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

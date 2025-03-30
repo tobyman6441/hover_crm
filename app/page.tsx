@@ -1,17 +1,16 @@
 'use client'
 
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import Image from "next/image"
-import { DndContext, DragEndEvent, closestCenter, useDroppable, useDraggable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useState, useEffect } from 'react'
-import { ProjectCard } from "@/components/project-card"
-import { ProjectSelectorModal } from "@/components/project-selector-modal"
 import { useRouter } from 'next/navigation'
-import { OpportunityCard } from './components/OpportunityCard'
+import { DndContext, DragEndEvent, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import Image from "next/image"
+import { Badge } from "@/components/ui/badge"
+import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { CSS } from '@dnd-kit/utilities'
+import { DroppableColumn, DraggableOpportunity, OpportunityCard } from './components/kanban-components'
+import { ColumnDeleteDialog } from './components/column-delete-dialog'
+import { OpportunityDeleteDialog } from './components/opportunity-delete-dialog'
 
 interface Project {
   id: string
@@ -24,24 +23,24 @@ interface Project {
   column: string
 }
 
-interface Opportunity {
-  id: string
-  title: string
-  options: Array<{
-    id: number
-    content: string
-    isComplete: boolean
-  }>
-  lastUpdated: string
-  column: string
-}
-
 interface Column {
   id: string
   title: string
 }
 
-const initialProjects: Project[] = []
+interface Option {
+  id: number
+  content: string
+  isComplete: boolean
+}
+
+interface Opportunity {
+  id: string
+  title: string
+  options: Option[]
+  lastUpdated: string
+  column: string
+}
 
 const initialColumns: Column[] = [
   { id: 'drafts', title: 'Drafts' },
@@ -52,17 +51,18 @@ const initialColumns: Column[] = [
 
 export default function KanbanView() {
   const router = useRouter()
-  const [projects, setProjects] = useState<Project[]>(initialProjects)
+  const [projects, setProjects] = useState<Project[]>([])
   const [columns, setColumns] = useState<Column[]>(initialColumns)
   const [isAddingColumn, setIsAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState("")
-  const [editingColumn, setEditingColumn] = useState<string | null>(null)
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
   const [editingColumnName, setEditingColumnName] = useState("")
-  const [isProjectSelectorOpen, setIsProjectSelectorOpen] = useState(false)
-  const [selectedColumn, setSelectedColumn] = useState<string>("")
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [viewMode, setViewMode] = useState<'kanban' | 'grid'>('kanban')
-  const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
+  const [columnToDelete, setColumnToDelete] = useState<{ id: string; title: string } | null>(null)
+  const [opportunityToDelete, setOpportunityToDelete] = useState<{ id: string; title: string } | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeDraggedOpportunity, setActiveDraggedOpportunity] = useState<Opportunity | null>(null)
 
   useEffect(() => {
     // Load opportunities from localStorage when the component mounts
@@ -70,8 +70,20 @@ export default function KanbanView() {
     setOpportunities(loadedOpportunities)
   }, [])
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event
+    setActiveId(active.id as string)
+    const draggedOpportunity = opportunities.find(opp => opp.id === active.id)
+    if (draggedOpportunity) {
+      setActiveDraggedOpportunity(draggedOpportunity)
+    }
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
+
+    setActiveId(null)
+    setActiveDraggedOpportunity(null)
 
     if (!over) return
 
@@ -99,15 +111,6 @@ export default function KanbanView() {
         : col
     )
     setColumns(updatedColumns)
-
-    // Update all opportunities in this column to reflect the new title
-    const updatedOpportunities = opportunities.map(opp =>
-      opp.column === columnId
-        ? { ...opp, column: newTitle }
-        : opp
-    )
-    setOpportunities(updatedOpportunities)
-    localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
   }
 
   function handleAddColumn() {
@@ -122,63 +125,33 @@ export default function KanbanView() {
     }
   }
 
-  function handleEditColumn(oldId: string, newTitle: string) {
-    if (newTitle.trim()) {
-      setColumns(columns.map(col => 
-        col.id === oldId 
-          ? { ...col, title: newTitle.trim() }
-          : col
-      ))
-      setProjects(projects.map(project => 
-        project.column === oldId 
-          ? { ...project, column: newTitle.trim() }
-          : project
-      ))
+  function handleDeleteColumn(columnId: string) {
+    const column = columns.find(col => col.id === columnId)
+    if (column) {
+      setColumnToDelete({ id: columnId, title: column.title })
     }
   }
 
-  function handleDeleteColumn(columnId: string) {
-    setColumns(columns.filter(col => col.id !== columnId))
-    setProjects(projects.filter(project => project.column !== columnId))
+  function confirmDeleteColumn() {
+    if (columnToDelete) {
+      setColumns(columns.filter(col => col.id !== columnToDelete.id))
+      setProjects(projects.filter(project => project.column !== columnToDelete.id))
+      setColumnToDelete(null)
+      toast.success('Column deleted')
+    }
   }
 
-  function handleKeyPress(e: React.KeyboardEvent, type: 'add' | 'edit', oldName?: string) {
+  function handleKeyPress(e: React.KeyboardEvent, type: 'add' | 'edit') {
     if (e.key === 'Enter') {
       if (type === 'add') {
         handleAddColumn()
-      } else if (type === 'edit' && oldName) {
-        handleEditColumn(oldName, editingColumnName)
       }
     } else if (e.key === 'Escape') {
       if (type === 'add') {
         setIsAddingColumn(false)
         setNewColumnName("")
-      } else {
-        setEditingColumn(null)
-        setEditingColumnName("")
       }
     }
-  }
-
-  function handleAddEstimate(columnName: string) {
-    const opportunityId = Date.now().toString()
-    router.push(`/opportunity/${opportunityId}`)
-  }
-
-  function handleProjectSelect(project: any) {
-    const newProject: Project = {
-      id: Date.now().toString(),
-      status: selectedColumn === "Lead confirmed" ? "Pending" : 
-             selectedColumn === "In progress" ? "In progress" : 
-             selectedColumn === "Planning" ? "Scheduled" : "",
-      type: project.measurementsType || "Event",
-      title: project.name,
-      subtitle: project.address,
-      image: project.image || "/brand/photography/2-bay-view.jpg",
-      column: selectedColumn
-    }
-    setProjects([...projects, newProject])
-    setIsProjectSelectorOpen(false)
   }
 
   const handleAddOpportunity = () => {
@@ -191,23 +164,32 @@ export default function KanbanView() {
       column: "drafts"
     }
 
-    // Save to localStorage
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
-    opportunities.push(opportunityData)
-    localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    // Update state first
+    const updatedOpportunities = [...opportunities, opportunityData]
+    setOpportunities(updatedOpportunities)
 
-    // Update state
-    setOpportunities(opportunities)
+    // Save to localStorage
+    localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
     
     // Navigate to the opportunity page
     router.push(`/opportunity/${newId}`)
   }
 
   const handleDeleteOpportunity = (id: string) => {
-    const updatedOpportunities = opportunities.filter(opp => opp.id !== id)
-    setOpportunities(updatedOpportunities)
-    localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
-    toast.success('Opportunity deleted')
+    const opportunity = opportunities.find(opp => opp.id === id)
+    if (opportunity) {
+      setOpportunityToDelete({ id, title: opportunity.title })
+    }
+  }
+
+  const confirmDeleteOpportunity = () => {
+    if (opportunityToDelete) {
+      const updatedOpportunities = opportunities.filter(opp => opp.id !== opportunityToDelete.id)
+      setOpportunities(updatedOpportunities)
+      localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
+      setOpportunityToDelete(null)
+      toast.success('Opportunity deleted')
+    }
   }
 
   return (
@@ -290,7 +272,11 @@ export default function KanbanView() {
       </div>
 
       {viewMode === 'kanban' ? (
-        <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+        <DndContext 
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd} 
+          collisionDetection={closestCenter}
+        >
           <div className="flex gap-4 overflow-x-auto pb-4">
             {columns.map((column) => (
               <div key={column.id} className="flex-1 min-w-[300px]">
@@ -339,20 +325,23 @@ export default function KanbanView() {
                 </div>
                 <DroppableColumn id={column.id}>
                   <div className="space-y-4 bg-gray-50 rounded-lg p-4 min-h-[200px]">
-                    {opportunities
-                      .filter(opportunity => opportunity.column === column.id)
-                      .map((opportunity) => (
-                        <DraggableOpportunity key={opportunity.id} id={opportunity.id}>
-                          <OpportunityCard
-                            id={opportunity.id}
-                            title={opportunity.title}
-                            options={opportunity.options}
-                            lastUpdated={opportunity.lastUpdated}
-                            column={column.title}
-                            onDelete={handleDeleteOpportunity}
-                          />
-                        </DraggableOpportunity>
-                      ))}
+                    <SortableContext items={opportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} strategy={verticalListSortingStrategy}>
+                      {opportunities
+                        .filter(opportunity => opportunity.column === column.id)
+                        .map((opportunity) => (
+                          <DraggableOpportunity key={opportunity.id} id={opportunity.id}>
+                            <OpportunityCard
+                              id={opportunity.id}
+                              title={opportunity.title}
+                              options={opportunity.options}
+                              lastUpdated={opportunity.lastUpdated}
+                              column={column.title}
+                              onDelete={handleDeleteOpportunity}
+                              isDraggable={true}
+                            />
+                          </DraggableOpportunity>
+                        ))}
+                    </SortableContext>
                   </div>
                 </DroppableColumn>
               </div>
@@ -410,20 +399,38 @@ export default function KanbanView() {
               )}
             </div>
           </div>
+
+          <DragOverlay>
+            {activeDraggedOpportunity && (
+              <OpportunityCard
+                id={activeDraggedOpportunity.id}
+                title={activeDraggedOpportunity.title}
+                options={activeDraggedOpportunity.options}
+                lastUpdated={activeDraggedOpportunity.lastUpdated}
+                column={columns.find(col => col.id === activeDraggedOpportunity.column)?.title || ''}
+                onDelete={handleDeleteOpportunity}
+                isDraggable={true}
+              />
+            )}
+          </DragOverlay>
         </DndContext>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {opportunities.map(opportunity => (
-            <OpportunityCard
-              key={opportunity.id}
-              id={opportunity.id}
-              title={opportunity.title}
-              options={opportunity.options}
-              lastUpdated={opportunity.lastUpdated}
-              column={opportunity.column}
-              onDelete={handleDeleteOpportunity}
-            />
-          ))}
+          {opportunities.map(opportunity => {
+            const column = columns.find(col => col.id === opportunity.column)
+            return (
+              <OpportunityCard
+                key={opportunity.id}
+                id={opportunity.id}
+                title={opportunity.title}
+                options={opportunity.options}
+                lastUpdated={opportunity.lastUpdated}
+                column={column?.title || opportunity.column}
+                onDelete={handleDeleteOpportunity}
+                isDraggable={false}
+              />
+            )
+          })}
 
           {opportunities.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
@@ -447,24 +454,20 @@ export default function KanbanView() {
           )}
         </div>
       )}
+
+      <ColumnDeleteDialog
+        isOpen={!!columnToDelete}
+        onClose={() => setColumnToDelete(null)}
+        onConfirm={confirmDeleteColumn}
+        columnTitle={columnToDelete?.title || ''}
+      />
+
+      <OpportunityDeleteDialog
+        isOpen={!!opportunityToDelete}
+        onClose={() => setOpportunityToDelete(null)}
+        onConfirm={confirmDeleteOpportunity}
+        opportunityTitle={opportunityToDelete?.title || ''}
+      />
     </main>
-  )
-}
-
-function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
-  const { setNodeRef } = useDroppable({ id })
-  return <div ref={setNodeRef}>{children}</div>
-}
-
-function DraggableOpportunity({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id })
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    opacity: isDragging ? 0.5 : 1,
-  }
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
-    </div>
   )
 }
