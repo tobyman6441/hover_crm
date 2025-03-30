@@ -59,9 +59,13 @@ export function DraggableOpportunity({ id, children }: DraggableOpportunityProps
 
   return (
     <div ref={setNodeRef} style={style}>
-      <div {...attributes} {...listeners} className="cursor-move">
-        {children}
-      </div>
+      {children}
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="absolute inset-0 cursor-move"
+        onClick={e => e.stopPropagation()}
+      />
     </div>
   )
 }
@@ -77,12 +81,13 @@ export function OpportunityCard({
 }: OpportunityCardProps) {
   const router = useRouter()
 
-  const handleClick = (e: React.MouseEvent) => {
-    // Prevent navigation if clicking the delete button or drag handle
-    if ((e.target as HTMLElement).closest('button')) {
-      return
-    }
+  const handleClick = () => {
     router.push(`/opportunity/${id}`)
+  }
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete(id)
   }
 
   const completedOptions = options.filter(option => option.isComplete)
@@ -92,7 +97,7 @@ export function OpportunityCard({
       onClick={handleClick}
       className="group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors cursor-pointer"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 relative z-10">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-medium text-gray-900 hover:text-gray-700">
             {title}
@@ -106,11 +111,8 @@ export function OpportunityCard({
             {column}
           </Badge>
           <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(id)
-            }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full z-10"
+            onClick={handleDelete}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full relative z-20"
           >
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -119,7 +121,7 @@ export function OpportunityCard({
         </div>
       </div>
       
-      <div className="mt-4 space-y-2">
+      <div className="mt-4 space-y-2 relative z-10">
         {completedOptions.length > 0 ? (
           completedOptions.map((option) => (
             <div key={option.id} className="flex items-center gap-2 text-sm text-gray-600">
