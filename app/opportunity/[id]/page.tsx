@@ -36,6 +36,7 @@ interface Option {
   id: number
   content: string
   isComplete: boolean
+  isApproved?: boolean
 }
 
 interface Operator {
@@ -345,6 +346,49 @@ export default function OpportunityPage() {
     })
   }
 
+  const handleMoveOption = (index: number, direction: 'left' | 'right') => {
+    if (
+      (direction === 'left' && index === 0) || 
+      (direction === 'right' && index === options.length - 1)
+    ) {
+      return
+    }
+
+    const newIndex = direction === 'left' ? index - 1 : index + 1
+    const newOptions = [...options]
+    const newOperators = [...operators]
+
+    // Swap options
+    const tempOption = newOptions[index]
+    newOptions[index] = newOptions[newIndex]
+    newOptions[newIndex] = tempOption
+
+    // Swap operators
+    const tempOperator = newOperators[index]
+    newOperators[index] = newOperators[newIndex]
+    newOperators[newIndex] = tempOperator
+
+    setOptions(newOptions)
+    setOperators(newOperators)
+
+    // Save to localStorage immediately
+    const opportunityId = window.location.pathname.split('/').pop()
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        options: newOptions,
+        operators: newOperators,
+        lastUpdated: new Date().toISOString()
+      }
+      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    }
+    
+    toast.success('Auto saved')
+  }
+
   const handleBackClick = () => {
     const completedOptions = options.filter(opt => opt.isComplete)
     const opportunityData = {
@@ -381,6 +425,29 @@ export default function OpportunityPage() {
     localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
     toast.success('Opportunity deleted')
     router.push('/')
+  }
+
+  const handleToggleApproval = (optionId: number) => {
+    const updatedOptions = options.map(opt => 
+      opt.id === optionId ? { ...opt, isApproved: !opt.isApproved } : opt
+    )
+    setOptions(updatedOptions)
+    
+    // Save to localStorage immediately
+    const opportunityId = window.location.pathname.split('/').pop()
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        options: updatedOptions,
+        lastUpdated: new Date().toISOString()
+      }
+      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    }
+    
+    toast.success('Auto saved')
   }
 
   return (
@@ -439,9 +506,28 @@ export default function OpportunityPage() {
                   <div className="group relative">
                     <button
                       onClick={() => handleOptionClick(option.id)}
-                      className="w-[240px] aspect-square rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center"
+                      className={`w-[240px] aspect-square rounded-lg border-2 border-dashed ${
+                        option.isApproved 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      } transition-colors flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center`}
                     >
                       <span className="text-sm font-medium">{option.content}</span>
+                      {option.isComplete && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleApproval(option.id)
+                          }}
+                          className={`mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                            option.isApproved
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                          }`}
+                        >
+                          {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
+                        </button>
+                      )}
                     </button>
                     <button
                       onClick={(e) => handleDeleteOption(option.id)}

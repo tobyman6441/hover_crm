@@ -19,6 +19,7 @@ interface Option {
   id: number
   content: string
   isComplete: boolean
+  isApproved?: boolean
 }
 
 interface Operator {
@@ -203,10 +204,23 @@ export function OpportunityCard({
             <div className="space-y-1">
               {completedOptions.map((option) => (
                 <div key={option.id} className="flex items-center gap-2 text-sm text-gray-600">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="truncate">{option.content}</span>
+                  {option.isApproved ? (
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  <span className={`truncate ${option.isApproved ? 'text-green-700' : ''}`}>
+                    {option.content}
+                  </span>
+                  {option.isApproved && (
+                    <Badge variant="secondary" className="text-xs bg-green-50 text-green-700">
+                      Approved
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>

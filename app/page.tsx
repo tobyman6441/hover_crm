@@ -50,8 +50,8 @@ interface Opportunity {
 
 const initialColumns: Column[] = [
   { id: 'drafts', title: 'Drafts' },
-  { id: 'in-progress', title: 'In Progress' },
-  { id: 'review', title: 'Review' },
+  { id: 'presented', title: 'Presented to customer' },
+  { id: 'waiting', title: 'Waiting for decision' },
   { id: 'approved', title: 'Approved' }
 ]
 
