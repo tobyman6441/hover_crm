@@ -6,10 +6,15 @@ interface DroppableColumnProps {
 }
 
 export function DroppableColumn({ id, children }: DroppableColumnProps) {
-  const { setNodeRef } = useDroppable({ id })
+  const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
-    <div ref={setNodeRef}>
+    <div 
+      ref={setNodeRef}
+      className={`transition-colors duration-200 ${
+        isOver ? 'bg-gray-100' : ''
+      }`}
+    >
       {children}
     </div>
   )

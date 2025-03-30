@@ -9,10 +9,16 @@ interface Option {
   isComplete: boolean
 }
 
+interface Operator {
+  id: number
+  type: 'and' | 'or'
+}
+
 interface OpportunityCardProps {
   id: string
   title: string
   options: Option[]
+  operators: Operator[]
   lastUpdated: string
   column: string
   onDelete: (id: string) => void
@@ -22,7 +28,8 @@ interface OpportunityCardProps {
 export function OpportunityCard({ 
   id, 
   title, 
-  options, 
+  options,
+  operators,
   lastUpdated, 
   column, 
   onDelete,
@@ -46,6 +53,32 @@ export function OpportunityCard({
   }
 
   const completedOptions = options.filter(option => option.isComplete)
+
+  const getComparisonSummary = () => {
+    if (completedOptions.length <= 1) return null
+
+    const groups: string[][] = []
+    let currentGroup: string[] = [completedOptions[0].content]
+
+    for (let i = 0; i < operators.length; i++) {
+      if (operators[i].type === 'and') {
+        currentGroup.push(completedOptions[i + 1].content)
+      } else {
+        groups.push([...currentGroup])
+        currentGroup = [completedOptions[i + 1].content]
+      }
+    }
+    groups.push(currentGroup)
+
+    if (groups.length === 1) {
+      return `Combined: ${groups[0].join(' + ')}`
+    }
+
+    return groups.map((group, index) => {
+      const groupText = group.join(' + ')
+      return index === 0 ? groupText : ` vs ${groupText}`
+    }).join('')
+  }
 
   const cardProps = isDraggable ? {
     ref: setNodeRef,
@@ -89,14 +122,21 @@ export function OpportunityCard({
       
       <div className="mt-4 space-y-2">
         {completedOptions.length > 0 ? (
-          completedOptions.map((option) => (
-            <div key={option.id} className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="truncate">{option.content}</span>
+          <>
+            <div className="text-sm font-medium text-gray-900">
+              {getComparisonSummary()}
             </div>
-          ))
+            <div className="space-y-1">
+              {completedOptions.map((option) => (
+                <div key={option.id} className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="truncate">{option.content}</span>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <p className="text-sm text-gray-500 italic">No options added yet</p>
         )}

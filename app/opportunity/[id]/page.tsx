@@ -38,6 +38,11 @@ interface Option {
   isComplete: boolean
 }
 
+interface Operator {
+  id: number
+  type: 'and' | 'or'
+}
+
 interface Job {
   id: string
   thumbnail: string
@@ -109,6 +114,7 @@ const jobs: Job[] = [
 export default function OpportunityPage() {
   const router = useRouter()
   const [options, setOptions] = useState<Option[]>([])
+  const [operators, setOperators] = useState<Operator[]>([])
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [title, setTitle] = useState('New Sales Opportunity')
   const [isJobSelectorOpen, setIsJobSelectorOpen] = useState(false)
@@ -133,6 +139,7 @@ export default function OpportunityPage() {
     if (existingOpportunity) {
       setTitle(existingOpportunity.title)
       setOptions(existingOpportunity.options || [])
+      setOperators(existingOpportunity.operators || [])
       setCurrentColumn(existingOpportunity.column)
     } else {
       // Initialize new opportunity with an empty option
@@ -146,8 +153,14 @@ export default function OpportunityPage() {
       content: "New option",
       isComplete: false
     }
+    const newOperator = {
+      id: operators.length + 1,
+      type: 'and' as const
+    }
     const updatedOptions = [...options, newOption]
+    const updatedOperators = [...operators, newOperator]
     setOptions(updatedOptions)
+    setOperators(updatedOperators)
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
@@ -158,6 +171,7 @@ export default function OpportunityPage() {
       opportunities[existingIndex] = {
         ...opportunities[existingIndex],
         options: updatedOptions,
+        operators: updatedOperators,
         lastUpdated: new Date().toISOString()
       }
       localStorage.setItem('opportunities', JSON.stringify(opportunities))
@@ -167,8 +181,11 @@ export default function OpportunityPage() {
   }
 
   const handleDeleteOption = (optionId: number) => {
+    const optionIndex = options.findIndex(opt => opt.id === optionId)
     const updatedOptions = options.filter(opt => opt.id !== optionId)
+    const updatedOperators = operators.filter((_, index) => index !== optionIndex)
     setOptions(updatedOptions)
+    setOperators(updatedOperators)
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
@@ -179,6 +196,30 @@ export default function OpportunityPage() {
       opportunities[existingIndex] = {
         ...opportunities[existingIndex],
         options: updatedOptions,
+        operators: updatedOperators,
+        lastUpdated: new Date().toISOString()
+      }
+      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    }
+    
+    toast.success('Auto saved')
+  }
+
+  const handleOperatorChange = (operatorId: number, newType: 'and' | 'or') => {
+    const updatedOperators = operators.map(op => 
+      op.id === operatorId ? { ...op, type: newType } : op
+    )
+    setOperators(updatedOperators)
+    
+    // Save to localStorage immediately
+    const opportunityId = window.location.pathname.split('/').pop()
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        operators: updatedOperators,
         lastUpdated: new Date().toISOString()
       }
       localStorage.setItem('opportunities', JSON.stringify(opportunities))
@@ -229,6 +270,7 @@ export default function OpportunityPage() {
         opportunities[existingIndex] = {
           ...opportunities[existingIndex],
           options: updatedOptions,
+          operators: operators,
           lastUpdated: new Date().toISOString()
         }
         localStorage.setItem('opportunities', JSON.stringify(opportunities))
@@ -309,6 +351,7 @@ export default function OpportunityPage() {
       id: window.location.pathname.split('/').pop(),
       title,
       options: completedOptions,
+      operators: operators,
       lastUpdated: new Date().toISOString(),
       column: currentColumn
     }
@@ -391,25 +434,38 @@ export default function OpportunityPage() {
             className="flex items-start gap-4 overflow-x-auto pb-4 px-4 snap-x snap-mandatory scrollbar-hide"
           >
             <div className="flex items-start gap-4 mx-auto">
-              {options.map((option) => (
-                <div
-                  key={option.id}
-                  className="group relative"
-                >
-                  <button
-                    onClick={() => handleOptionClick(option.id)}
-                    className="w-[240px] aspect-square rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center"
-                  >
-                    <span className="text-sm font-medium">{option.content}</span>
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteOption(option.id)}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+              {options.map((option, index) => (
+                <div key={option.id} className="flex items-center gap-4">
+                  <div className="group relative">
+                    <button
+                      onClick={() => handleOptionClick(option.id)}
+                      className="w-[240px] aspect-square rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center"
+                    >
+                      <span className="text-sm font-medium">{option.content}</span>
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteOption(option.id)}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  {index < options.length - 1 && (
+                    <Select
+                      value={operators[index]?.type || 'and'}
+                      onValueChange={(value: 'and' | 'or') => handleOperatorChange(operators[index].id, value)}
+                    >
+                      <SelectTrigger className="w-[80px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="and">And</SelectItem>
+                        <SelectItem value="or">Or</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               ))}
               

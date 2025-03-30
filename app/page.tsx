@@ -34,10 +34,16 @@ interface Option {
   isComplete: boolean
 }
 
+interface Operator {
+  id: number
+  type: 'and' | 'or'
+}
+
 interface Opportunity {
   id: string
   title: string
   options: Option[]
+  operators: Operator[]
   lastUpdated: string
   column: string
 }
@@ -160,6 +166,7 @@ export default function KanbanView() {
       id: newId,
       title: "New Opportunity",
       options: [],
+      operators: [],
       lastUpdated: new Date().toISOString(),
       column: "drafts"
     }
@@ -196,13 +203,13 @@ export default function KanbanView() {
     <main className="container mx-auto p-4">
       <nav className="flex items-center justify-between mb-8">
         <div className="h-8 w-24 relative">
-          <Image
+        <Image
             src="/brand/logos/Wordmark/SVG/Logo-Black.svg"
             alt="Hover"
             fill
             className="object-contain"
-            priority
-          />
+          priority
+        />
         </div>
         <div className="flex items-center gap-3">
           <button className="w-14 h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors">
@@ -334,6 +341,7 @@ export default function KanbanView() {
                               id={opportunity.id}
                               title={opportunity.title}
                               options={opportunity.options}
+                              operators={opportunity.operators}
                               lastUpdated={opportunity.lastUpdated}
                               column={column.title}
                               onDelete={handleDeleteOpportunity}
@@ -402,15 +410,18 @@ export default function KanbanView() {
 
           <DragOverlay>
             {activeDraggedOpportunity && (
-              <OpportunityCard
-                id={activeDraggedOpportunity.id}
-                title={activeDraggedOpportunity.title}
-                options={activeDraggedOpportunity.options}
-                lastUpdated={activeDraggedOpportunity.lastUpdated}
-                column={columns.find(col => col.id === activeDraggedOpportunity.column)?.title || ''}
-                onDelete={handleDeleteOpportunity}
-                isDraggable={true}
-              />
+              <div className="transform scale-105 shadow-lg">
+                <OpportunityCard
+                  id={activeDraggedOpportunity.id}
+                  title={activeDraggedOpportunity.title}
+                  options={activeDraggedOpportunity.options}
+                  operators={activeDraggedOpportunity.operators}
+                  lastUpdated={activeDraggedOpportunity.lastUpdated}
+                  column={columns.find(col => col.id === activeDraggedOpportunity.column)?.title || ''}
+                  onDelete={handleDeleteOpportunity}
+                  isDraggable={true}
+                />
+              </div>
             )}
           </DragOverlay>
         </DndContext>
@@ -424,6 +435,7 @@ export default function KanbanView() {
                 id={opportunity.id}
                 title={opportunity.title}
                 options={opportunity.options}
+                operators={opportunity.operators}
                 lastUpdated={opportunity.lastUpdated}
                 column={column?.title || opportunity.column}
                 onDelete={handleDeleteOpportunity}
@@ -452,7 +464,7 @@ export default function KanbanView() {
               </button>
             </div>
           )}
-        </div>
+    </div>
       )}
 
       <ColumnDeleteDialog
