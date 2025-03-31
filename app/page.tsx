@@ -38,6 +38,7 @@ interface Option {
     description: string
     price: number
     afterImage: string
+    address?: string
   }
 }
 
@@ -89,7 +90,8 @@ export default function KanbanView() {
       opportunity.options.some(option => 
         option.content.toLowerCase().includes(searchLower) ||
         option.details?.title.toLowerCase().includes(searchLower) ||
-        option.details?.description.toLowerCase().includes(searchLower)
+        option.details?.description.toLowerCase().includes(searchLower) ||
+        option.details?.address?.toLowerCase().includes(searchLower)
       ) ||
       opportunity.column.toLowerCase().includes(searchLower)
     )

@@ -14,6 +14,7 @@ interface Option {
     description: string
     price: number
     afterImage: string
+    address?: string
   }
 }
 
