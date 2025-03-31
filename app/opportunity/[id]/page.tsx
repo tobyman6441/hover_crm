@@ -240,7 +240,7 @@ export default function OpportunityPage() {
       // Save to localStorage
       const opportunityId = window.location.pathname.split('/').pop()
       const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-      const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
       
       if (existingIndex >= 0) {
         opportunities[existingIndex] = {
@@ -264,7 +264,7 @@ export default function OpportunityPage() {
       // Save to localStorage
       const opportunityId = window.location.pathname.split('/').pop()
       const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-      const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
       
       if (existingIndex >= 0) {
         opportunities[existingIndex] = {
@@ -297,7 +297,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -323,7 +323,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -375,7 +375,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -400,7 +400,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -450,7 +450,7 @@ export default function OpportunityPage() {
       // Save to localStorage immediately
       const opportunityId = window.location.pathname.split('/').pop()
       const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-      const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
       
       if (existingIndex >= 0) {
         opportunities[existingIndex] = {
@@ -580,7 +580,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -614,7 +614,7 @@ export default function OpportunityPage() {
   const handleDeleteOpportunity = () => {
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const updatedOpportunities = opportunities.filter((opp: any) => opp.id !== opportunityId)
+    const updatedOpportunities = opportunities.filter((opp: Opportunity) => opp.id !== opportunityId)
     localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
     toast.success('Opportunity deleted')
     router.push('/')
@@ -629,7 +629,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -665,7 +665,7 @@ export default function OpportunityPage() {
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {

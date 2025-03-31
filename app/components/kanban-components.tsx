@@ -46,7 +46,9 @@ interface Operator {
 }
 
 type DragHandleProps = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   attributes: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listeners: any
 }
 
