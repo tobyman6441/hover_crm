@@ -45,6 +45,11 @@ interface Operator {
   type: 'and' | 'or'
 }
 
+interface DragHandleProps {
+  attributes: Record<string, unknown>
+  listeners: Record<string, unknown>
+}
+
 interface OpportunityCardProps {
   id: string
   title: string
@@ -54,10 +59,7 @@ interface OpportunityCardProps {
   column: string
   onDelete: (id: string) => void
   isDraggable?: boolean
-  dragHandleProps?: {
-    attributes: Record<string, unknown>
-    listeners: Record<string, unknown>
-  }
+  dragHandleProps?: DragHandleProps
 }
 
 export function DroppableColumn({ 

@@ -200,7 +200,7 @@ export default function OpportunityPage() {
   // Load existing opportunity data when the component mounts
   useEffect(() => {
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingOpportunity = opportunities.find((opp: Opportunity) => opp.id === opportunityId)
 
     if (existingOpportunity) {
@@ -239,7 +239,7 @@ export default function OpportunityPage() {
       
       // Save to localStorage
       const opportunityId = window.location.pathname.split('/').pop()
-      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
       const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
       
       if (existingIndex >= 0) {
@@ -263,7 +263,7 @@ export default function OpportunityPage() {
       
       // Save to localStorage
       const opportunityId = window.location.pathname.split('/').pop()
-      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
       const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
       
       if (existingIndex >= 0) {
@@ -296,7 +296,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -322,7 +322,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -374,7 +374,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -399,7 +399,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -449,7 +449,7 @@ export default function OpportunityPage() {
       
       // Save to localStorage immediately
       const opportunityId = window.location.pathname.split('/').pop()
-      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
       const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
       
       if (existingIndex >= 0) {
@@ -466,7 +466,7 @@ export default function OpportunityPage() {
     }
   }
 
-  const handleFeedback = (isPositive: boolean) => {
+  const handleFeedback = () => {
     toast.success('Thank you for your feedback')
     setShowErrorDialog(false)
   }
@@ -518,7 +518,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -570,7 +570,7 @@ export default function OpportunityPage() {
 
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -599,7 +599,7 @@ export default function OpportunityPage() {
 
     // In a real app, we would save this to a backend
     // For now, we'll use localStorage to persist the data
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityData.id)
     
     if (existingIndex >= 0) {
@@ -615,7 +615,7 @@ export default function OpportunityPage() {
 
   const handleDeleteOpportunity = () => {
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const updatedOpportunities = opportunities.filter((opp: any) => opp.id !== opportunityId)
     localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
     toast.success('Opportunity deleted')
@@ -630,7 +630,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -666,7 +666,7 @@ export default function OpportunityPage() {
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
@@ -1163,14 +1163,14 @@ export default function OpportunityPage() {
               <p>Combining jobs into a single material list, work order, and(or) estimate is not available. If this feature would help you, please click the thumbs up below.</p>
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => handleFeedback(true)}
+                  onClick={() => handleFeedback()}
                   className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
                 >
                   <ThumbsUp className="w-5 h-5" />
                   <span>This would help</span>
                 </button>
                 <button
-                  onClick={() => handleFeedback(false)}
+                  onClick={() => handleFeedback()}
                   className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
                 >
                   <ThumbsDown className="w-5 h-5" />
