@@ -74,6 +74,15 @@ export default function KanbanView() {
     // Load opportunities from localStorage when the component mounts
     const loadedOpportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
     setOpportunities(loadedOpportunities)
+
+    // Load columns from localStorage, fallback to initialColumns if none exist
+    const savedColumns = localStorage.getItem('columns')
+    if (savedColumns) {
+      setColumns(JSON.parse(savedColumns))
+    } else {
+      // If no columns exist in localStorage, save initialColumns
+      localStorage.setItem('columns', JSON.stringify(initialColumns))
+    }
   }, [])
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -117,6 +126,9 @@ export default function KanbanView() {
         : col
     )
     setColumns(updatedColumns)
+    // Save to localStorage
+    localStorage.setItem('columns', JSON.stringify(updatedColumns))
+    toast.success('Column renamed')
   }
 
   function handleAddColumn() {
@@ -125,9 +137,13 @@ export default function KanbanView() {
         id: newColumnName.trim().toLowerCase().replace(/\s+/g, '-'),
         title: newColumnName.trim()
       }
-      setColumns([...columns, newColumn])
+      const updatedColumns = [...columns, newColumn]
+      setColumns(updatedColumns)
+      // Save to localStorage
+      localStorage.setItem('columns', JSON.stringify(updatedColumns))
       setNewColumnName("")
       setIsAddingColumn(false)
+      toast.success('Column added')
     }
   }
 
@@ -140,8 +156,20 @@ export default function KanbanView() {
 
   function confirmDeleteColumn() {
     if (columnToDelete) {
-      setColumns(columns.filter(col => col.id !== columnToDelete.id))
-      setProjects(projects.filter(project => project.column !== columnToDelete.id))
+      const updatedColumns = columns.filter(col => col.id !== columnToDelete.id)
+      setColumns(updatedColumns)
+      // Save to localStorage
+      localStorage.setItem('columns', JSON.stringify(updatedColumns))
+      
+      // Update any opportunities in the deleted column to move to 'drafts'
+      const updatedOpportunities = opportunities.map(opp => 
+        opp.column === columnToDelete.id 
+          ? { ...opp, column: 'drafts' }
+          : opp
+      )
+      setOpportunities(updatedOpportunities)
+      localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
+      
       setColumnToDelete(null)
       toast.success('Column deleted')
     }

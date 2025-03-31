@@ -139,6 +139,7 @@ export default function OpportunityPage() {
   const [columns, setColumns] = useState<{id: string, title: string}[]>([])
   const [history, setHistory] = useState<HistoryState[]>([])
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1)
+  const columnsRef = useRef<string>('')
 
   // Load columns from localStorage
   useEffect(() => {
@@ -149,22 +150,36 @@ export default function OpportunityPage() {
       } else {
         // Use defaultColumns as fallback if no columns in localStorage
         setColumns(defaultColumns)
+        // Save defaultColumns to localStorage if it's empty
+        localStorage.setItem('columns', JSON.stringify(defaultColumns))
       }
     }
 
     // Initial load
     loadColumns()
 
-    // Set up storage event listener
+    // Set up storage event listener for changes in other tabs/windows
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'columns') {
         loadColumns()
       }
     }
 
+    // Set up interval to check for changes in the same tab
+    const checkInterval = setInterval(() => {
+      const savedColumns = localStorage.getItem('columns')
+      if (savedColumns && savedColumns !== columnsRef.current) {
+        columnsRef.current = savedColumns
+        loadColumns()
+      }
+    }, 1000) // Check every second
+
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      clearInterval(checkInterval)
+    }
+  }, []) // Remove columns from dependencies
 
   // Load existing opportunity data when the component mounts
   useEffect(() => {
