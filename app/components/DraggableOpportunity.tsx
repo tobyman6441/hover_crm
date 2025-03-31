@@ -1,4 +1,5 @@
-import { useDraggable } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface DraggableOpportunityProps {
   id: string
@@ -6,11 +7,13 @@ interface DraggableOpportunityProps {
 }
 
 export function DraggableOpportunity({ id, children }: DraggableOpportunityProps) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>

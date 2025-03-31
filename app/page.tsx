@@ -366,9 +366,9 @@ export default function KanbanView() {
           onDragEnd={handleDragEnd} 
           collisionDetection={closestCenter}
         >
-          <div className="flex gap-4 overflow-x-auto flex-1">
+          <div className="flex gap-4 overflow-x-auto h-[calc(100vh-12rem)]">
             {columns.map((column) => (
-              <div key={column.id} className="flex-1 min-w-[300px]">
+              <div key={column.id} className="flex-shrink-0 w-[300px]">
                 <DroppableColumn 
                   id={column.id}
                   title={column.title}

@@ -1026,7 +1026,14 @@ export default function OpportunityPage() {
                         {statuses.map((status) => (
                           <button
                             key={status}
-                            onClick={() => handleStatusChange(status)}
+                            onClick={() => {
+                              setSelectedStatuses(prev => {
+                                if (prev.includes(status)) {
+                                  return prev.filter(s => s !== status)
+                                }
+                                return [...prev, status]
+                              })
+                            }}
                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm ${
                               selectedStatuses.includes(status)
                                 ? status === 'Complete'

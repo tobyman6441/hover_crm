@@ -133,51 +133,73 @@ export function OpportunityCard({
       onClick={handleClick}
       className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
     >
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="text-xs">
-              {column}
-            </Badge>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete(id)
-              }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
-            >
-              <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <h3 className="text-sm font-medium text-gray-900 hover:text-gray-700">
-            {title}
-          </h3>
-          <p className="mt-1 text-xs text-gray-500">
-            Last updated {new Date(lastUpdated).toLocaleDateString()}
-          </p>
+      {/* Title and Status - First Line */}
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-medium text-gray-900">
+          {title}
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              router.push(`/opportunity/${id}`)
+            }}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(id)
+            }}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
         </div>
       </div>
-      
-      {optionsWithPrices.length > 0 ? (
-        <div className="space-y-2">
-          <div className="text-sm text-gray-900">
-            {getOptionSummary()}
-          </div>
-          <div className="flex items-baseline gap-2">
-            <div className="text-sm font-semibold text-gray-900">
-              {getPriceRange()}
-            </div>
-            {optionsWithPrices.some(opt => opt.isApproved) && (
-              <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700">
+
+      {/* Last Updated - Second Line */}
+      <p className="text-xs text-gray-500 mb-2">
+        Last updated {new Date(lastUpdated).toLocaleDateString()}
+      </p>
+
+      {/* Comparison Title */}
+      <div className="mb-2">
+        <h4 className="text-sm text-gray-900">
+          {getOptionSummary()}
+        </h4>
+      </div>
+
+      {/* Options List */}
+      <div className="space-y-1">
+        {options.map((option) => (
+          <div key={option.id} className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-sm text-gray-600">
+              {option.content}
+            </span>
+            {option.isApproved && (
+              <span className="text-xs text-green-600 ml-auto">
                 Approved
-              </Badge>
+              </span>
             )}
           </div>
+        ))}
+      </div>
+
+      {/* Price Display */}
+      {getPriceRange() && (
+        <div className={`mt-2 text-sm font-medium ${options.some(opt => opt.isApproved) ? 'text-green-600' : 'text-gray-900'}`}>
+          {getPriceRange()} {options.some(opt => opt.isApproved) ? 'approved' : ''}
         </div>
-      ) : (
-        <p className="text-sm text-gray-500 italic">No options added yet</p>
       )}
     </div>
   )
