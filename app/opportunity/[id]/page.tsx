@@ -144,8 +144,6 @@ export default function OpportunityPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeOptionId, setActiveOptionId] = useState<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-  const [selectedMeasurementTypes, setSelectedMeasurementTypes] = useState<string[]>([])
   const [selectedJobs, setSelectedJobs] = useState<Job[]>([])
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -156,6 +154,8 @@ export default function OpportunityPage() {
   const columnsRef = useRef<string>('')
   const [showDetails, setShowDetails] = useState(false)
   const [activeDetailsOptionId, setActiveDetailsOptionId] = useState<number | null>(null)
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
+  const [selectedMeasurementTypes, setSelectedMeasurementTypes] = useState<string[]>([])
 
   // Load columns from localStorage
   useEffect(() => {
@@ -502,8 +502,7 @@ export default function OpportunityPage() {
   )
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = 
-      job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.measurementType.toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -513,24 +512,34 @@ export default function OpportunityPage() {
     return matchesSearch && matchesStatus && matchesMeasurementType
   })
 
-  const handleStatusChange = (newStatus: string) => {
-    setCurrentColumn(newStatus)
+  const handleStatusChange = (status: string) => {
+    // Handle column changes
+    setCurrentColumn(status)
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
         ...opportunities[existingIndex],
-        column: newStatus,
+        column: status,
         lastUpdated: new Date().toISOString()
       }
       localStorage.setItem('opportunities', JSON.stringify(opportunities))
     }
     
-    toast.success(`Moved to ${columns.find(col => col.id === newStatus)?.title || newStatus}`)
+    toast.success(`Moved to ${columns.find(col => col.id === status)?.title || status}`)
+  }
+
+  const handleStatusFilterChange = (status: string) => {
+    setSelectedStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status)
+      }
+      return [...prev, status]
+    })
   }
 
   const handleMeasurementTypeChange = (value: string) => {
@@ -588,8 +597,8 @@ export default function OpportunityPage() {
 
   const handleBackClick = () => {
     const completedOptions = options.filter(opt => opt.isComplete)
-    const opportunityData = {
-      id: window.location.pathname.split('/').pop(),
+    const opportunityData: Opportunity = {
+      id: window.location.pathname.split('/').pop() || '',
       title,
       options: completedOptions,
       operators: operators,
@@ -597,18 +606,7 @@ export default function OpportunityPage() {
       column: currentColumn
     }
 
-    // In a real app, we would save this to a backend
-    // For now, we'll use localStorage to persist the data
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityData.id)
-    
-    if (existingIndex >= 0) {
-      opportunities[existingIndex] = opportunityData
-    } else {
-      opportunities.push(opportunityData)
-    }
-    
-    localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    saveOpportunity(opportunityData)
     toast.success('Auto saved')
     router.back()
   }
@@ -690,6 +688,19 @@ export default function OpportunityPage() {
     } else if (direction === 'next' && currentIndex < options.length - 1) {
       setActiveDetailsOptionId(options[currentIndex + 1].id)
     }
+  }
+
+  const saveOpportunity = (opportunityData: Opportunity) => {
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityData.id)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = opportunityData
+    } else {
+      opportunities.push(opportunityData)
+    }
+    
+    localStorage.setItem('opportunities', JSON.stringify(opportunities))
   }
 
   return (
@@ -1017,12 +1028,12 @@ export default function OpportunityPage() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        selectedStatuses.length > 0
+                        statuses.length > 0
                           ? 'border-emerald-600 bg-emerald-600 text-white'
                           : 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
                       }`}>
                         <Filter className="w-3 h-3" />
-                        Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}
+                        Status {statuses.length > 0 && `(${statuses.length})`}
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-2" side="bottom" align="start">
@@ -1030,19 +1041,10 @@ export default function OpportunityPage() {
                         {statuses.map((status) => (
                           <button
                             key={status}
-                            onClick={() => {
-                              setSelectedStatuses(prev => {
-                                if (prev.includes(status)) {
-                                  return prev.filter(s => s !== status)
-                                }
-                                return [...prev, status]
-                              })
-                            }}
+                            onClick={() => handleStatusFilterChange(status)}
                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm ${
                               selectedStatuses.includes(status)
-                                ? status === 'Complete'
-                                  ? 'bg-emerald-50 text-emerald-900'
-                                  : 'bg-gray-100 text-gray-900'
+                                ? 'bg-emerald-50 text-emerald-900'
                                 : 'hover:bg-gray-50'
                             }`}
                           >
@@ -1061,12 +1063,12 @@ export default function OpportunityPage() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        selectedMeasurementTypes.length > 0
+                        measurementTypes.length > 0
                           ? 'border-emerald-600 bg-emerald-600 text-white'
                           : 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
                       }`}>
                         <Filter className="w-3 h-3" />
-                        Type {selectedMeasurementTypes.length > 0 && `(${selectedMeasurementTypes.length})`}
+                        Type {measurementTypes.length > 0 && `(${measurementTypes.length})`}
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-2" side="bottom" align="start">
@@ -1076,13 +1078,13 @@ export default function OpportunityPage() {
                             key={type}
                             onClick={() => handleMeasurementTypeChange(type)}
                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm ${
-                              selectedMeasurementTypes.includes(type)
+                              measurementTypes.includes(type)
                                 ? 'bg-emerald-50 text-emerald-900'
                                 : 'hover:bg-gray-50'
                             }`}
                           >
                             <span>{type}</span>
-                            {selectedMeasurementTypes.includes(type) && (
+                            {measurementTypes.includes(type) && (
                               <svg className="w-4 h-4 ml-auto" viewBox="0 0 24 24" fill="none">
                                 <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>

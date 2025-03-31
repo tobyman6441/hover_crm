@@ -45,9 +45,9 @@ interface Operator {
   type: 'and' | 'or'
 }
 
-interface DragHandleProps {
-  attributes: Record<string, unknown>
-  listeners: Record<string, unknown>
+type DragHandleProps = {
+  attributes: any
+  listeners: any
 }
 
 interface OpportunityCardProps {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, rectIntersection } from '@dnd-kit/core'
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import Image from "next/image"
 import { Button } from '@/components/ui/button'
@@ -568,7 +568,6 @@ export default function KanbanView() {
         <DndContext 
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd} 
-          collisionDetection={rectIntersection}
         >
           <div className="flex gap-4 overflow-x-auto h-[calc(100vh-12rem)]">
             {columns.map((column) => (
