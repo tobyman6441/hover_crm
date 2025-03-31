@@ -32,6 +32,13 @@ interface Option {
   id: number
   content: string
   isComplete: boolean
+  isApproved?: boolean
+  details?: {
+    title: string
+    description: string
+    price: number
+    afterImage: string
+  }
 }
 
 interface Operator {
@@ -69,6 +76,24 @@ export default function KanbanView() {
   const [opportunityToDelete, setOpportunityToDelete] = useState<{ id: string; title: string } | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeDraggedOpportunity, setActiveDraggedOpportunity] = useState<Opportunity | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+
+  // Filter opportunities based on search query
+  const filteredOpportunities = opportunities.filter(opportunity => {
+    if (!searchQuery) return true
+    
+    const searchLower = searchQuery.toLowerCase()
+    return (
+      opportunity.title.toLowerCase().includes(searchLower) ||
+      opportunity.options.some(option => 
+        option.content.toLowerCase().includes(searchLower) ||
+        option.details?.title.toLowerCase().includes(searchLower) ||
+        option.details?.description.toLowerCase().includes(searchLower)
+      ) ||
+      opportunity.column.toLowerCase().includes(searchLower)
+    )
+  })
 
   useEffect(() => {
     // Load opportunities from localStorage when the component mounts
@@ -231,20 +256,47 @@ export default function KanbanView() {
     <main className="container mx-auto p-4 h-screen flex flex-col">
       <nav className="flex items-center justify-between mb-8">
         <div className="h-8 w-24 relative">
-        <Image
+          <Image
             src="/brand/logos/Wordmark/SVG/Logo-Black.svg"
             alt="Hover"
             fill
             className="object-contain"
-          priority
-        />
+            priority
+          />
         </div>
         <div className="flex items-center gap-3">
-          <button className="w-14 h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="w-14 h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+            {isSearchOpen && (
+              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search opportunities..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+                    autoFocus
+                  />
+                  <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                {searchQuery && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Found {filteredOpportunities.length} opportunities
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <button className="h-14 px-8 bg-[#F7F7F7] rounded-full text-black hover:bg-gray-100 transition-colors font-medium">
             Schedule demo
           </button>
@@ -318,7 +370,7 @@ export default function KanbanView() {
                 <DroppableColumn 
                   id={column.id}
                   title={column.title}
-                  opportunities={opportunities.filter(opp => opp.column === column.id)}
+                  opportunities={filteredOpportunities.filter(opp => opp.column === column.id)}
                   isEditing={editingColumnId === column.id}
                   editComponent={
                     <input
@@ -350,8 +402,8 @@ export default function KanbanView() {
                   onDeleteClick={() => handleDeleteColumn(column.id)}
                 >
                   <div className="space-y-4 bg-gray-50 rounded-lg p-4 h-full">
-                    <SortableContext items={opportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} strategy={verticalListSortingStrategy}>
-                      {opportunities
+                    <SortableContext items={filteredOpportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} strategy={verticalListSortingStrategy}>
+                      {filteredOpportunities
                         .filter(opportunity => opportunity.column === column.id)
                         .map((opportunity) => (
                           <DraggableOpportunity key={opportunity.id} id={opportunity.id}>
@@ -445,7 +497,7 @@ export default function KanbanView() {
         </DndContext>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {opportunities.map(opportunity => {
+          {filteredOpportunities.map(opportunity => {
             const column = columns.find(col => col.id === opportunity.column)
             return (
               <OpportunityCard
@@ -462,7 +514,7 @@ export default function KanbanView() {
             )
           })}
 
-          {opportunities.length === 0 && (
+          {filteredOpportunities.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -482,7 +534,7 @@ export default function KanbanView() {
               </button>
             </div>
           )}
-    </div>
+        </div>
       )}
 
       <ColumnDeleteDialog
