@@ -39,6 +39,12 @@ interface Option {
   content: string
   isComplete: boolean
   isApproved?: boolean
+  details?: {
+    title: string
+    description: string
+    price: number
+    afterImage: string
+  }
 }
 
 interface Operator {
@@ -637,6 +643,30 @@ export default function OpportunityPage() {
     setShowDetails(true)
   }
 
+  const handleDetailsClose = (optionId: number, details: { title: string; description: string; price: number; afterImage: string }) => {
+    setShowDetails(false)
+    const updatedOptions = options.map(opt => 
+      opt.id === optionId ? { ...opt, details } : opt
+    )
+    setOptions(updatedOptions)
+    
+    // Save to localStorage immediately
+    const opportunityId = window.location.pathname.split('/').pop()
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        options: updatedOptions,
+        lastUpdated: new Date().toISOString()
+      }
+      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    }
+    
+    toast.success('Auto saved')
+  }
+
   const handleNavigateDetails = (direction: 'prev' | 'next') => {
     if (!activeDetailsOptionId) return
 
@@ -749,57 +779,140 @@ export default function OpportunityPage() {
                   <div className="group relative">
                     <div
                       onClick={() => handleOptionClick(option.id)}
-                      className={`w-[240px] aspect-square rounded-lg border-2 border-dashed ${
+                      className={`${option.details ? 'h-[500px]' : 'aspect-square'} w-[280px] rounded-lg border-2 ${
                         option.isApproved 
                           ? 'border-green-500 bg-green-50' 
-                          : 'border-gray-200 hover:border-gray-300'
-                      } transition-colors flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center cursor-pointer`}
+                          : option.details
+                          ? 'border-gray-200 hover:border-gray-300'
+                          : 'border-dashed border-gray-200 hover:border-gray-300'
+                      } transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center cursor-pointer relative`}
                     >
-                      <span className="text-sm font-medium">{option.content}</span>
-                      {option.isComplete && (
-                        <div
+                      {/* Option Management Buttons */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        {index > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMoveOption(index, 'left')
+                            }}
+                            className="p-1 hover:bg-gray-100 rounded-full"
+                          >
+                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                        )}
+                        {index < options.length - 1 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMoveOption(index, 'right')
+                            }}
+                            className="p-1 hover:bg-gray-100 rounded-full"
+                          >
+                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        )}
+                        <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleToggleApproval(option.id)
+                            handleDuplicateOption(option.id)
                           }}
-                          className={`mt-2 px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${
-                            option.isApproved
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                          }`}
+                          className="p-1 hover:bg-gray-100 rounded-full"
                         >
-                          {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
-                        </div>
-                      )}
-                      {option.isComplete && (
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?jobId=15273950'
-                          }}
-                          className="mt-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
-                          Calculate costs and pricing
-                        </div>
-                      )}
-                      {option.isComplete && (
-                        <div
+                        </button>
+                        <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleShowDetails(option.id)
+                            handleDeleteOption(option.id)
                           }}
-                          className="mt-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1.5 cursor-pointer"
+                          className="p-1 hover:bg-gray-100 rounded-full"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
-                          Show details
-                        </div>
-                      )}
+                        </button>
+                      </div>
+
+                      {/* Main Content */}
+                      <div className="w-full h-full flex flex-col">
+                        {option.details ? (
+                          <>
+                            <div className="relative w-full h-[200px]">
+                              <Image
+                                src={option.details.afterImage}
+                                alt="After"
+                                fill
+                                className="object-cover rounded-t-lg"
+                              />
+                            </div>
+                            <div className="flex-1 w-full p-4 flex flex-col gap-3">
+                              <span className="text-sm font-medium text-gray-900">{option.content}</span>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-lg font-bold text-gray-900">${option.details.price.toLocaleString()}</span>
+                                <span className="text-xs text-gray-500">As low as ${Math.round(option.details.price / 12).toLocaleString()}/month</span>
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                <div className="font-medium text-gray-900">{option.details.title}</div>
+                                <div className="line-clamp-3">{option.details.description}</div>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center flex-1">
+                            <span className="text-sm font-medium">{option.content}</span>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        {option.isComplete && (
+                          <div className="w-full p-4 flex flex-col gap-2 mt-auto">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleToggleApproval(option.id)
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer text-center ${
+                                option.isApproved
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                              }`}
+                            >
+                              {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
+                            </div>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?jobId=15273950'
+                              }}
+                              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                              Calculate costs & pricing
+                            </div>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleShowDetails(option.id)
+                              }}
+                              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              Show details
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {index < options.length - 1 && (
@@ -1061,7 +1174,13 @@ export default function OpportunityPage() {
 
       <EstimateDetails
         isOpen={showDetails}
-        onClose={() => setShowDetails(false)}
+        onClose={(details) => {
+          if (activeDetailsOptionId) {
+            handleDetailsClose(activeDetailsOptionId, details)
+          } else {
+            setShowDetails(false)
+          }
+        }}
         currentOptionId={activeDetailsOptionId || 0}
         totalOptions={options.length}
         onNavigate={handleNavigateDetails}

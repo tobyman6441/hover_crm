@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, Link as LinkIcon } from 'lucide-react'
 
 interface EstimateDetailsProps {
   isOpen: boolean
-  onClose: () => void
+  onClose: (details: { title: string; description: string; price: number; afterImage: string }) => void
   currentOptionId: number
   totalOptions: number
   onNavigate: (direction: 'prev' | 'next') => void
@@ -95,8 +95,17 @@ export function EstimateDetails({
     })
   }
 
+  const handleClose = () => {
+    onClose({
+      title,
+      description,
+      price,
+      afterImage: '/Timberline-hdz.png'
+    })
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-6">
         <DialogHeader>
           <DialogTitle className="sr-only">Estimate Details</DialogTitle>
