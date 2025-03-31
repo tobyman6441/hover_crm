@@ -4,6 +4,8 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { Trash2 } from 'lucide-react'
 
 interface DroppableColumnProps {
   id: string
@@ -60,15 +62,22 @@ interface OpportunityCardProps {
 
 export function DroppableColumn({ 
   id, 
-  children, 
   title, 
-  opportunities,
-  onTitleClick,
-  onDeleteClick,
-  isEditing,
-  editComponent
+  opportunities, 
+  isEditing, 
+  editComponent, 
+  onTitleClick, 
+  onDeleteClick, 
+  children 
 }: DroppableColumnProps) {
-  const { setNodeRef } = useDroppable({ id })
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: {
+      type: 'column',
+      column: id,
+      opportunities
+    }
+  })
 
   const getColumnPriceRange = () => {
     if (!opportunities || opportunities.length === 0) return null
@@ -166,46 +175,51 @@ export function DroppableColumn({
   const priceRange = getColumnPriceRange()
 
   return (
-    <div ref={setNodeRef}>
-      <div className="flex flex-col mb-4">
-        <div className="flex items-baseline justify-between">
-          <div className="flex items-baseline gap-2">
-            {isEditing ? (
-              editComponent
-            ) : (
-              <h2 
-                className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700"
-                onClick={onTitleClick}
-              >
-                {title}
-              </h2>
-            )}
-            {priceRange?.mainDisplay && (
-              <span className="text-xs text-gray-500">
-                {priceRange.mainDisplay}
-              </span>
-            )}
-          </div>
-          {onDeleteClick && (
-            <button
-              onClick={onDeleteClick}
-              className="text-gray-400 hover:text-gray-600"
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex flex-col h-full bg-gray-50 rounded-lg p-4",
+        isOver && "ring-2 ring-blue-500 ring-opacity-50 bg-blue-50"
+      )}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            editComponent
+          ) : (
+            <h3 
+              className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700"
+              onClick={onTitleClick}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              {title}
+            </h3>
+          )}
+          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
+            {opportunities.length}
+          </span>
+        </div>
+        <button
+          onClick={onDeleteClick}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      {priceRange?.mainDisplay && (
+        <div className="mb-4">
+          <div className="text-sm font-medium text-gray-900">
+            {priceRange.mainDisplay}
+          </div>
+          {priceRange.approvedAmount && (
+            <div className="mt-1 text-xs text-green-600 font-medium">
+              {priceRange.approvedAmount}
+            </div>
           )}
         </div>
-        {priceRange?.approvedAmount && (
-          <div className="mt-1.5 flex items-baseline">
-            <span className="text-xs text-green-600 font-medium">
-              {priceRange.approvedAmount}
-            </span>
-          </div>
-        )}
+      )}
+      <div className="flex-1 overflow-y-auto">
+        {children}
       </div>
-      {children}
     </div>
   )
 }
@@ -217,7 +231,8 @@ export function DraggableOpportunity({ id, children }: DraggableOpportunityProps
     setNodeRef,
     transform,
     transition,
-    isDragging
+    isDragging,
+    isOver
   } = useSortable({
     id,
     transition: {
@@ -229,14 +244,21 @@ export function DraggableOpportunity({ id, children }: DraggableOpportunityProps
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 1 : 0
   }
 
   return (
     <div ref={setNodeRef} style={style}>
-      {React.cloneElement(children, {
-        dragHandleProps: { attributes, listeners }
-      })}
+      {isOver && (
+        <div className="absolute inset-0 bg-blue-50 border-2 border-blue-200 rounded-lg pointer-events-none" />
+      )}
+      <div className={`${isDragging ? 'shadow-lg' : ''}`}>
+        {React.cloneElement(children, {
+          dragHandleProps: { attributes, listeners }
+        })}
+      </div>
     </div>
   )
 }
@@ -351,7 +373,9 @@ export function OpportunityCard({
       role="button"
       tabIndex={0}
       onClick={handleCardClick}
-      className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+      className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${
+        isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+      } ${dragHandleProps?.listeners ? 'touch-none' : ''}`}
       {...(isDraggable && dragHandleProps ? {
         ...dragHandleProps.attributes,
         ...dragHandleProps.listeners,

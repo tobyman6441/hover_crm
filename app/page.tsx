@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { DndContext, DragEndEvent, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { DndContext, DragEndEvent, closestCenter, DragOverlay, DragStartEvent, rectIntersection, DragOverEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from '@/components/ui/button'
@@ -132,15 +132,28 @@ export default function KanbanView() {
     const activeOpportunity = opportunities.find(opp => opp.id === active.id)
     if (!activeOpportunity) return
 
-    const targetColumn = columns.find(col => col.id === over.id)
-    if (!targetColumn) return
+    // Check if dropping into a column
+    const overData = over.data?.current
+    if (overData?.type === 'column') {
+      const targetColumnId = overData.column
+      if (activeOpportunity.column !== targetColumnId) {
+        const updatedOpportunities = opportunities.map(opp => 
+          opp.id === active.id 
+            ? { ...opp, column: targetColumnId }
+            : opp
+        )
+        setOpportunities(updatedOpportunities)
+        localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
+      }
+      return
+    }
 
-    if (activeOpportunity.column !== targetColumn.id) {
-      const updatedOpportunities = opportunities.map(opp => 
-        opp.id === active.id 
-          ? { ...opp, column: targetColumn.id }
-          : opp
-      )
+    // Handle sorting within the same column
+    if (active.id !== over.id) {
+      const oldIndex = opportunities.findIndex(opp => opp.id === active.id)
+      const newIndex = opportunities.findIndex(opp => opp.id === over.id)
+      
+      const updatedOpportunities = arrayMove(opportunities, oldIndex, newIndex)
       setOpportunities(updatedOpportunities)
       localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
     }
@@ -364,7 +377,7 @@ export default function KanbanView() {
         <DndContext 
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd} 
-          collisionDetection={closestCenter}
+          collisionDetection={rectIntersection}
         >
           <div className="flex gap-4 overflow-x-auto h-[calc(100vh-12rem)]">
             {columns.map((column) => (
@@ -403,8 +416,11 @@ export default function KanbanView() {
                   }}
                   onDeleteClick={() => handleDeleteColumn(column.id)}
                 >
-                  <div className="space-y-4 bg-gray-50 rounded-lg p-4 h-full">
-                    <SortableContext items={filteredOpportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-4">
+                    <SortableContext 
+                      items={filteredOpportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} 
+                      strategy={verticalListSortingStrategy}
+                    >
                       {filteredOpportunities
                         .filter(opportunity => opportunity.column === column.id)
                         .map((opportunity) => (
