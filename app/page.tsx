@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { DndContext, DragEndEvent, closestCenter, DragOverlay, DragStartEvent, rectIntersection, DragOverEvent } from '@dnd-kit/core'
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, rectIntersection } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import Image from "next/image"
-import { Badge } from "@/components/ui/badge"
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { DroppableColumn, DraggableOpportunity, OpportunityCard } from './components/kanban-components'
@@ -17,17 +16,6 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Filter } from "lucide-react"
-
-interface Project {
-  id: string
-  status: string
-  type: string
-  title: string
-  subtitle: string
-  date?: string
-  image?: string
-  column: string
-}
 
 interface Column {
   id: string

@@ -8,9 +8,7 @@ import { Search, Filter } from 'lucide-react'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -21,7 +19,6 @@ import {
 } from "@/components/ui/popover"
 import { toast, Toaster } from 'sonner'
 import { ThumbsUp, ThumbsDown } from 'lucide-react'
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -67,6 +64,15 @@ interface Job {
 interface HistoryState {
   options: Option[]
   operators: Operator[]
+}
+
+interface Opportunity {
+  id: string
+  title: string
+  options: Option[]
+  operators: Operator[]
+  lastUpdated: string
+  column: string
 }
 
 const jobs: Job[] = [
@@ -138,8 +144,6 @@ export default function OpportunityPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeOptionId, setActiveOptionId] = useState<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [statusFilter, setStatusFilter] = useState<string | null>(null)
-  const [measurementTypeFilter, setMeasurementTypeFilter] = useState<string | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [selectedMeasurementTypes, setSelectedMeasurementTypes] = useState<string[]>([])
   const [selectedJobs, setSelectedJobs] = useState<Job[]>([])
@@ -197,7 +201,7 @@ export default function OpportunityPage() {
   useEffect(() => {
     const opportunityId = window.location.pathname.split('/').pop()
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
-    const existingOpportunity = opportunities.find((opp: any) => opp.id === opportunityId)
+    const existingOpportunity = opportunities.find((opp: Opportunity) => opp.id === opportunityId)
 
     if (existingOpportunity) {
       setTitle(existingOpportunity.title)

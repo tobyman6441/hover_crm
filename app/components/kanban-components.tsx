@@ -55,8 +55,8 @@ interface OpportunityCardProps {
   onDelete: (id: string) => void
   isDraggable?: boolean
   dragHandleProps?: {
-    attributes: any
-    listeners: any
+    attributes: Record<string, unknown>
+    listeners: Record<string, unknown>
   }
 }
 
@@ -87,16 +87,13 @@ export function DroppableColumn({
     let totalMaxPrice = 0
     let hasAnyOptions = false
     let hasOnlyApprovedOptions = true
-    let hasRanges = false
     let hasAnyApprovedOptions = false
-    let opportunitiesWithPrices = 0
 
     // Calculate total for each opportunity
     opportunities.forEach(opp => {
       const optionsWithPrices = opp.options.filter(option => option.details?.price)
       if (optionsWithPrices.length > 0) {
         hasAnyOptions = true
-        opportunitiesWithPrices++
       }
       
       // Get approved options
@@ -140,11 +137,6 @@ export function DroppableColumn({
         const minGroupTotal = Math.min(...andGroupTotals)
         const maxGroupTotal = Math.max(...andGroupTotals)
         
-        // Check if this opportunity has a range
-        if (minGroupTotal !== maxGroupTotal) {
-          hasRanges = true
-        }
-
         // Add the minimum of non-approved options to the total min price
         totalMinPrice += minGroupTotal
         
