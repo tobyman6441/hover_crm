@@ -11,6 +11,12 @@ import { toast } from 'sonner'
 import { DroppableColumn, DraggableOpportunity, OpportunityCard } from './components/kanban-components'
 import { ColumnDeleteDialog } from './components/column-delete-dialog'
 import { OpportunityDeleteDialog } from './components/opportunity-delete-dialog'
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Filter } from "lucide-react"
 
 interface Project {
   id: string
@@ -79,22 +85,101 @@ export default function KanbanView() {
   const [activeDraggedOpportunity, setActiveDraggedOpportunity] = useState<Opportunity | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({})
+  const [filters, setFilters] = useState<{ status: string[]; lastUpdated: string; options: { min?: number; max?: number } }>({
+    status: [],
+    lastUpdated: 'today',
+    options: {}
+  })
+  const [sortBy, setSortBy] = useState('price-asc')
 
   // Filter opportunities based on search query
   const filteredOpportunities = opportunities.filter(opportunity => {
-    if (!searchQuery) return true
-    
-    const searchLower = searchQuery.toLowerCase()
-    return (
-      opportunity.title.toLowerCase().includes(searchLower) ||
-      opportunity.options.some(option => 
-        option.content.toLowerCase().includes(searchLower) ||
-        option.details?.title.toLowerCase().includes(searchLower) ||
-        option.details?.description.toLowerCase().includes(searchLower) ||
-        option.details?.address?.toLowerCase().includes(searchLower)
-      ) ||
-      opportunity.column.toLowerCase().includes(searchLower)
-    )
+    // Search query filter
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase()
+      const matchesSearch = (
+        opportunity.title.toLowerCase().includes(searchLower) ||
+        opportunity.options.some(option => 
+          option.content.toLowerCase().includes(searchLower) ||
+          option.details?.title.toLowerCase().includes(searchLower) ||
+          option.details?.description.toLowerCase().includes(searchLower) ||
+          option.details?.address?.toLowerCase().includes(searchLower)
+        ) ||
+        opportunity.column.toLowerCase().includes(searchLower)
+      )
+      if (!matchesSearch) return false
+    }
+
+    // Price range filter
+    if (priceRange.min !== undefined || priceRange.max !== undefined) {
+      const opportunityPrice = opportunity.options.reduce((sum, option) => {
+        if (option.isApproved && option.details?.price) {
+          return sum + option.details.price
+        }
+        return sum
+      }, 0)
+
+      if (priceRange.min !== undefined && opportunityPrice < priceRange.min) return false
+      if (priceRange.max !== undefined && opportunityPrice > priceRange.max) return false
+    }
+
+    // Status filter
+    if (filters.status.length > 0) {
+      const hasApproved = opportunity.options.some(opt => opt.isApproved)
+      const hasPending = opportunity.options.some(opt => !opt.isApproved && opt.isComplete)
+      
+      if (filters.status.includes('approved') && !hasApproved) return false
+      if (filters.status.includes('pending') && !hasPending) return false
+    }
+
+    // Last updated filter
+    if (filters.lastUpdated !== 'all') {
+      const lastUpdated = new Date(opportunity.lastUpdated)
+      const now = new Date()
+      const diffInDays = Math.floor((now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24))
+
+      switch (filters.lastUpdated) {
+        case 'today':
+          if (diffInDays > 1) return false
+          break
+        case 'week':
+          if (diffInDays > 7) return false
+          break
+        case 'month':
+          if (diffInDays > 30) return false
+          break
+      }
+    }
+
+    // Number of options filter
+    if (filters.options.min !== undefined && opportunity.options.length < filters.options.min) return false
+    if (filters.options.max !== undefined && opportunity.options.length > filters.options.max) return false
+
+    return true
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'price-asc': {
+        const priceA = a.options.reduce((sum, opt) => sum + (opt.details?.price || 0), 0)
+        const priceB = b.options.reduce((sum, opt) => sum + (opt.details?.price || 0), 0)
+        return priceA - priceB
+      }
+      case 'price-desc': {
+        const priceA = a.options.reduce((sum, opt) => sum + (opt.details?.price || 0), 0)
+        const priceB = b.options.reduce((sum, opt) => sum + (opt.details?.price || 0), 0)
+        return priceB - priceA
+      }
+      case 'date-asc':
+        return new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime()
+      case 'date-desc':
+        return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+      case 'options-asc':
+        return a.options.length - b.options.length
+      case 'options-desc':
+        return b.options.length - a.options.length
+      default:
+        return 0
+    }
   })
 
   useEffect(() => {
@@ -360,6 +445,130 @@ export default function KanbanView() {
             >
               Grid View
             </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Filter className="h-4 w-4" />
+                  Filters
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Price Range</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        value={priceRange.min || ''}
+                        onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-24"
+                      />
+                      <span>-</span>
+                      <Input
+                        type="number"
+                        placeholder="Max"
+                        value={priceRange.max || ''}
+                        onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
+                        className="w-24"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="approved"
+                        checked={filters.status.includes('approved')}
+                        onCheckedChange={(checked) => {
+                          setFilters(prev => ({
+                            ...prev,
+                            status: checked
+                              ? [...prev.status, 'approved']
+                              : prev.status.filter(s => s !== 'approved')
+                          }))
+                        }}
+                      />
+                      <Label htmlFor="approved">Approved</Label>
+                      <Checkbox
+                        id="pending"
+                        checked={filters.status.includes('pending')}
+                        onCheckedChange={(checked) => {
+                          setFilters(prev => ({
+                            ...prev,
+                            status: checked
+                              ? [...prev.status, 'pending']
+                              : prev.status.filter(s => s !== 'pending')
+                          }))
+                        }}
+                      />
+                      <Label htmlFor="pending">Pending</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Updated</Label>
+                    <Select
+                      value={filters.lastUpdated}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, lastUpdated: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select time range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="today">Today</SelectItem>
+                        <SelectItem value="week">Last 7 days</SelectItem>
+                        <SelectItem value="month">Last 30 days</SelectItem>
+                        <SelectItem value="all">All time</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Number of Options</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.options.min || ''}
+                        onChange={(e) => setFilters(prev => ({
+                          ...prev,
+                          options: { ...prev.options, min: e.target.value ? Number(e.target.value) : undefined }
+                        }))}
+                        className="w-24"
+                      />
+                      <span>-</span>
+                      <Input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.options.max || ''}
+                        onChange={(e) => setFilters(prev => ({
+                          ...prev,
+                          options: { ...prev.options, max: e.target.value ? Number(e.target.value) : undefined }
+                        }))}
+                        className="w-24"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Select
+              value={sortBy}
+              onValueChange={setSortBy}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="date-asc">Date: Oldest First</SelectItem>
+                <SelectItem value="date-desc">Date: Newest First</SelectItem>
+                <SelectItem value="options-asc">Options: Low to High</SelectItem>
+                <SelectItem value="options-desc">Options: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <button
