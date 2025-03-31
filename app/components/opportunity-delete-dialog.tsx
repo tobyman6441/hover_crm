@@ -27,7 +27,7 @@ export function OpportunityDeleteDialog({
         <DialogHeader>
           <DialogTitle>Delete Opportunity</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the opportunity "{opportunityTitle}"? This action cannot be undone.
+            Are you sure you want to delete the opportunity &quot;{opportunityTitle}&quot;? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

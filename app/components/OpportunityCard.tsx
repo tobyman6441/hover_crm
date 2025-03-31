@@ -2,7 +2,6 @@ import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface Option {
   id: number

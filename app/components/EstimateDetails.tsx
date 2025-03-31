@@ -53,7 +53,6 @@ export function EstimateDetails({
   ])
   const [isSliderVisible, setIsSliderVisible] = useState(false)
   const [shareLink, setShareLink] = useState('')
-  const [isEditing, setIsEditing] = useState(false)
 
   const monthlyPayment = calculateMonthlyPayment(price, financeSettings.apr, financeSettings.termLength)
 

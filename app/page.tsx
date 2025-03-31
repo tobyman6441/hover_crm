@@ -71,7 +71,6 @@ const initialColumns: Column[] = [
 
 export default function KanbanView() {
   const router = useRouter()
-  const [projects, setProjects] = useState<Project[]>([])
   const [columns, setColumns] = useState<Column[]>(initialColumns)
   const [isAddingColumn, setIsAddingColumn] = useState(false)
   const [newColumnName, setNewColumnName] = useState("")
@@ -81,7 +80,6 @@ export default function KanbanView() {
   const [viewMode, setViewMode] = useState<'kanban' | 'grid'>('kanban')
   const [columnToDelete, setColumnToDelete] = useState<{ id: string; title: string } | null>(null)
   const [opportunityToDelete, setOpportunityToDelete] = useState<{ id: string; title: string } | null>(null)
-  const [activeId, setActiveId] = useState<string | null>(null)
   const [activeDraggedOpportunity, setActiveDraggedOpportunity] = useState<Opportunity | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -199,7 +197,6 @@ export default function KanbanView() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
-    setActiveId(active.id as string)
     const draggedOpportunity = opportunities.find(opp => opp.id === active.id)
     if (draggedOpportunity) {
       setActiveDraggedOpportunity(draggedOpportunity)
@@ -208,9 +205,6 @@ export default function KanbanView() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-
-    setActiveId(null)
-    setActiveDraggedOpportunity(null)
 
     if (!over) return
 

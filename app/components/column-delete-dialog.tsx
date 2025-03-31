@@ -27,7 +27,7 @@ export function ColumnDeleteDialog({
         <DialogHeader>
           <DialogTitle>Delete Column</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the column "{columnTitle}"? This action cannot be undone.
+            Are you sure you want to delete the column &quot;{columnTitle}&quot;? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
