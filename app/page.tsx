@@ -264,8 +264,8 @@ export default function KanbanView() {
 
       <div className="mb-8">
         <nav className="flex gap-12">
-          <a href="#" className="text-[#ADADAD] hover:text-gray-900 text-4xl font-semibold transition-colors">Projects</a>
-          <a href="#" className="text-[#ADADAD] hover:text-gray-900 text-4xl font-semibold transition-colors">Design ideas</a>
+          <a href="https://hover.to/wr/properties" className="text-[#ADADAD] hover:text-gray-900 text-4xl font-semibold transition-colors">Projects</a>
+          <a href="https://hover.to/wr/properties/design" className="text-[#ADADAD] hover:text-gray-900 text-4xl font-semibold transition-colors">Design ideas</a>
           <a href="#" className="text-black text-4xl font-semibold">Sales Opportunities</a>
         </nav>
       </div>

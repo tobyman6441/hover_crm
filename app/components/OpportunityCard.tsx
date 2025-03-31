@@ -2,6 +2,7 @@ import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface Option {
   id: number
@@ -59,27 +60,58 @@ export function OpportunityCard({
     router.push(`/opportunity/${id}`)
   }
 
-  const completedOptions = options.filter(option => option.isComplete)
+  const optionsWithPrices = options.filter(option => option.details?.price)
 
-  const getComparisonSummary = () => {
-    if (completedOptions.length <= 1) return null
+  const getPriceRange = () => {
+    if (optionsWithPrices.length === 0) return null
+
+    // Group options by "And" relationships
+    const andGroups: Option[][] = []
+    let currentGroup: Option[] = []
+
+    optionsWithPrices.forEach((option, index) => {
+      currentGroup.push(option)
+      if (index < operators.length && operators[index].type === 'or') {
+        andGroups.push([...currentGroup])
+        currentGroup = []
+      }
+    })
+    if (currentGroup.length > 0) {
+      andGroups.push(currentGroup)
+    }
+
+    // Calculate total price for each "And" group
+    const andGroupTotals = andGroups.map(group => {
+      return group.reduce((sum, option) => {
+        return sum + (option.details?.price || 0)
+      }, 0)
+    })
+
+    const minPrice = Math.min(...andGroupTotals)
+    const maxPrice = Math.max(...andGroupTotals)
+
+    if (minPrice === maxPrice) {
+      return `$${minPrice.toLocaleString()}`
+    }
+
+    return `$${minPrice.toLocaleString()} - $${maxPrice.toLocaleString()}`
+  }
+
+  const getOptionSummary = () => {
+    if (optionsWithPrices.length <= 1) return optionsWithPrices[0]?.content
 
     const groups: string[][] = []
-    let currentGroup: string[] = [completedOptions[0].content]
+    let currentGroup: string[] = [optionsWithPrices[0].content]
 
     for (let i = 0; i < operators.length; i++) {
-      if (operators[i].type === 'and') {
-        currentGroup.push(completedOptions[i + 1].content)
+      if (operators[i]?.type === 'and') {
+        currentGroup.push(optionsWithPrices[i + 1].content)
       } else {
         groups.push([...currentGroup])
-        currentGroup = [completedOptions[i + 1].content]
+        currentGroup = [optionsWithPrices[i + 1].content]
       }
     }
     groups.push(currentGroup)
-
-    if (groups.length === 1) {
-      return `Combined: ${groups[0].join(' + ')}`
-    }
 
     return groups.map((group, index) => {
       const groupText = group.join(' + ')
@@ -98,80 +130,54 @@ export function OpportunityCard({
     <div
       {...cardProps}
       onClick={handleClick}
-      className={`group relative bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-300 transition-colors ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
+      className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-medium text-gray-900 hover:text-gray-700">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="outline" className="text-xs">
+              {column}
+            </Badge>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(id)
+              }}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
+            >
+              <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <h3 className="text-sm font-medium text-gray-900 hover:text-gray-700">
             {title}
           </h3>
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500">
             Last updated {new Date(lastUpdated).toLocaleDateString()}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="outline" className="text-xs">
-            {column}
-          </Badge>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(id)
-            }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-100 rounded-full"
-          >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
       </div>
       
-      <div className="mt-6 space-y-4">
-        {completedOptions.length > 0 ? (
-          <>
-            <div className="text-sm font-medium text-gray-900">
-              {getComparisonSummary()}
+      {optionsWithPrices.length > 0 ? (
+        <div className="space-y-2">
+          <div className="text-sm text-gray-900">
+            {getOptionSummary()}
+          </div>
+          <div className="flex items-baseline gap-2">
+            <div className="text-sm font-semibold text-gray-900">
+              {getPriceRange()}
             </div>
-            <div className="space-y-3">
-              {completedOptions.map((option) => (
-                <div key={option.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
-                  {option.isApproved ? (
-                    <svg className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-medium ${option.isApproved ? 'text-green-700' : 'text-gray-900'}`}>
-                        {option.content}
-                      </span>
-                      {option.isApproved && (
-                        <Badge variant="secondary" className="text-xs bg-green-50 text-green-700">
-                          Approved
-                        </Badge>
-                      )}
-                    </div>
-                    {option.details && (
-                      <div className="mt-2 space-y-2">
-                        <div className="font-medium text-gray-900">{option.details.title}</div>
-                        <div className="text-sm text-gray-600 line-clamp-2">{option.details.description}</div>
-                        <div className="text-sm font-semibold text-gray-900">${option.details.price.toLocaleString()}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-gray-500 italic">No options added yet</p>
-        )}
-      </div>
+            {optionsWithPrices.some(opt => opt.isApproved) && (
+              <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700">
+                Approved
+              </Badge>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500 italic">No options added yet</p>
+      )}
     </div>
   )
 } 
