@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { defaultColumns } from '@/app/config/columns'
+import { EstimateDetails } from '@/app/components/EstimateDetails'
 
 interface Option {
   id: number
@@ -140,6 +141,8 @@ export default function OpportunityPage() {
   const [history, setHistory] = useState<HistoryState[]>([])
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1)
   const columnsRef = useRef<string>('')
+  const [showDetails, setShowDetails] = useState(false)
+  const [activeDetailsOptionId, setActiveDetailsOptionId] = useState<number | null>(null)
 
   // Load columns from localStorage
   useEffect(() => {
@@ -629,6 +632,22 @@ export default function OpportunityPage() {
     toast.success('Auto saved')
   }
 
+  const handleShowDetails = (optionId: number) => {
+    setActiveDetailsOptionId(optionId)
+    setShowDetails(true)
+  }
+
+  const handleNavigateDetails = (direction: 'prev' | 'next') => {
+    if (!activeDetailsOptionId) return
+
+    const currentIndex = options.findIndex(opt => opt.id === activeDetailsOptionId)
+    if (direction === 'prev' && currentIndex > 0) {
+      setActiveDetailsOptionId(options[currentIndex - 1].id)
+    } else if (direction === 'next' && currentIndex < options.length - 1) {
+      setActiveDetailsOptionId(options[currentIndex + 1].id)
+    }
+  }
+
   return (
     <main className="container mx-auto p-4 relative">
       <div className="flex items-center mb-8">
@@ -728,80 +747,58 @@ export default function OpportunityPage() {
               {options.map((option, index) => (
                 <div key={option.id} className="flex items-center gap-4">
                   <div className="group relative">
-                    <button
+                    <div
                       onClick={() => handleOptionClick(option.id)}
                       className={`w-[240px] aspect-square rounded-lg border-2 border-dashed ${
                         option.isApproved 
                           ? 'border-green-500 bg-green-50' 
                           : 'border-gray-200 hover:border-gray-300'
-                      } transition-colors flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center`}
+                      } transition-colors flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center cursor-pointer`}
                     >
                       <span className="text-sm font-medium">{option.content}</span>
                       {option.isComplete && (
-                        <button
+                        <div
                           onClick={(e) => {
                             e.stopPropagation()
                             handleToggleApproval(option.id)
                           }}
-                          className={`mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          className={`mt-2 px-3 py-1 rounded-full text-xs font-medium cursor-pointer ${
                             option.isApproved
                               ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                           }`}
                         >
                           {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
-                        </button>
+                        </div>
                       )}
-                    </button>
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDuplicateOption(option.id)
-                        }}
-                        className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteOption(option.id)}
-                        className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {index > 0 && (
-                        <button
+                      {option.isComplete && (
+                        <div
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleMoveOption(index, 'left')
+                            window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?jobId=15273950'
                           }}
-                          className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                          className="mt-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1.5 cursor-pointer"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                           </svg>
-                        </button>
+                          Calculate costs and pricing
+                        </div>
                       )}
-                    </div>
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {index < options.length - 1 && (
-                        <button
+                      {option.isComplete && (
+                        <div
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleMoveOption(index, 'right')
+                            handleShowDetails(option.id)
                           }}
-                          className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                          className="mt-2 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1.5 cursor-pointer"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
-                        </button>
+                          Show details
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1061,6 +1058,14 @@ export default function OpportunityPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EstimateDetails
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        currentOptionId={activeDetailsOptionId || 0}
+        totalOptions={options.length}
+        onNavigate={handleNavigateDetails}
+      />
 
       <Toaster position="top-center" />
     </main>
