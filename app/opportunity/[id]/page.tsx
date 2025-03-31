@@ -54,6 +54,11 @@ interface Job {
   status: string
 }
 
+interface HistoryState {
+  options: Option[]
+  operators: Operator[]
+}
+
 const jobs: Job[] = [
   {
     id: '1',
@@ -132,6 +137,8 @@ export default function OpportunityPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [currentColumn, setCurrentColumn] = useState('drafts')
   const [columns, setColumns] = useState<{id: string, title: string}[]>([])
+  const [history, setHistory] = useState<HistoryState[]>([])
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1)
 
   // Load columns from localStorage
   useEffect(() => {
@@ -170,13 +177,75 @@ export default function OpportunityPage() {
       setOptions(existingOpportunity.options || [])
       setOperators(existingOpportunity.operators || [])
       setCurrentColumn(existingOpportunity.column || 'drafts')
+      // Initialize history with the current state
+      setHistory([{ options: existingOpportunity.options || [], operators: existingOpportunity.operators || [] }])
+      setCurrentHistoryIndex(0)
     } else {
       // Initialize new opportunity with an empty option and default column
-      setOptions([{ id: 1, content: '+ Option 1', isComplete: false }])
+      const initialOptions = [{ id: 1, content: '+ Option 1', isComplete: false }]
+      setOptions(initialOptions)
       const defaultColumn = columns[0]?.id || 'drafts'
       setCurrentColumn(defaultColumn)
+      // Initialize history with the initial state
+      setHistory([{ options: initialOptions, operators: [] }])
+      setCurrentHistoryIndex(0)
     }
   }, [columns]) // Re-run when columns change
+
+  const saveToHistory = (newOptions: Option[], newOperators: Operator[]) => {
+    const newHistory = history.slice(0, currentHistoryIndex + 1)
+    newHistory.push({ options: newOptions, operators: newOperators })
+    setHistory(newHistory)
+    setCurrentHistoryIndex(newHistory.length - 1)
+  }
+
+  const handleUndo = () => {
+    if (currentHistoryIndex > 0) {
+      const previousState = history[currentHistoryIndex - 1]
+      setOptions(previousState.options)
+      setOperators(previousState.operators)
+      setCurrentHistoryIndex(currentHistoryIndex - 1)
+      
+      // Save to localStorage
+      const opportunityId = window.location.pathname.split('/').pop()
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+      const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+      
+      if (existingIndex >= 0) {
+        opportunities[existingIndex] = {
+          ...opportunities[existingIndex],
+          options: previousState.options,
+          operators: previousState.operators,
+          lastUpdated: new Date().toISOString()
+        }
+        localStorage.setItem('opportunities', JSON.stringify(opportunities))
+      }
+    }
+  }
+
+  const handleRedo = () => {
+    if (currentHistoryIndex < history.length - 1) {
+      const nextState = history[currentHistoryIndex + 1]
+      setOptions(nextState.options)
+      setOperators(nextState.operators)
+      setCurrentHistoryIndex(currentHistoryIndex + 1)
+      
+      // Save to localStorage
+      const opportunityId = window.location.pathname.split('/').pop()
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+      const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+      
+      if (existingIndex >= 0) {
+        opportunities[existingIndex] = {
+          ...opportunities[existingIndex],
+          options: nextState.options,
+          operators: nextState.operators,
+          lastUpdated: new Date().toISOString()
+        }
+        localStorage.setItem('opportunities', JSON.stringify(opportunities))
+      }
+    }
+  }
 
   const handleAddOption = () => {
     const newOption = {
@@ -192,6 +261,7 @@ export default function OpportunityPage() {
     const updatedOperators = [...operators, newOperator]
     setOptions(updatedOptions)
     setOperators(updatedOperators)
+    saveToHistory(updatedOptions, updatedOperators)
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
@@ -217,6 +287,7 @@ export default function OpportunityPage() {
     const updatedOperators = operators.filter((_, index) => index !== optionIndex)
     setOptions(updatedOptions)
     setOperators(updatedOperators)
+    saveToHistory(updatedOptions, updatedOperators)
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
@@ -236,11 +307,64 @@ export default function OpportunityPage() {
     toast.success('Auto saved')
   }
 
+  const handleDuplicateOption = (optionId: number) => {
+    const optionToDuplicate = options.find(opt => opt.id === optionId)
+    if (!optionToDuplicate) return
+
+    const newOption = {
+      id: Math.max(...options.map(opt => opt.id)) + 1,
+      content: optionToDuplicate.content,
+      isComplete: optionToDuplicate.isComplete,
+      isApproved: optionToDuplicate.isApproved
+    }
+    
+    const optionIndex = options.findIndex(opt => opt.id === optionId)
+    
+    const updatedOptions = [
+      ...options.slice(0, optionIndex + 1),
+      newOption,
+      ...options.slice(optionIndex + 1)
+    ]
+    
+    const newOperator = {
+      id: Math.max(...operators.map(op => op.id)) + 1,
+      type: 'and' as const
+    }
+    
+    const updatedOperators = [
+      ...operators.slice(0, optionIndex + 1),
+      newOperator,
+      ...operators.slice(optionIndex + 1)
+    ]
+    
+    setOptions(updatedOptions)
+    setOperators(updatedOperators)
+    saveToHistory(updatedOptions, updatedOperators)
+    
+    // Save to localStorage immediately
+    const opportunityId = window.location.pathname.split('/').pop()
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        options: updatedOptions,
+        operators: updatedOperators,
+        lastUpdated: new Date().toISOString()
+      }
+      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    }
+    
+    toast.success('Option duplicated')
+  }
+
   const handleOperatorChange = (operatorId: number, newType: 'and' | 'or') => {
     const updatedOperators = operators.map(op => 
       op.id === operatorId ? { ...op, type: newType } : op
     )
     setOperators(updatedOperators)
+    saveToHistory(options, updatedOperators)
     
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
@@ -411,6 +535,7 @@ export default function OpportunityPage() {
 
     setOptions(newOptions)
     setOperators(newOperators)
+    saveToHistory(newOptions, newOperators)
 
     // Save to localStorage immediately
     const opportunityId = window.location.pathname.split('/').pop()
@@ -497,7 +622,8 @@ export default function OpportunityPage() {
           className="text-gray-500 hover:text-gray-700 transition-colors"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12h18" />
           </svg>
         </button>
         <div className="flex items-center gap-4 ml-4">
@@ -537,14 +663,44 @@ export default function OpportunityPage() {
             </SelectContent>
           </Select>
         </div>
-        <button
-          onClick={() => setShowDeleteDialog(true)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700 ml-auto"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={handleUndo}
+            disabled={currentHistoryIndex <= 0}
+            className={`p-2 rounded-full transition-colors ${
+              currentHistoryIndex <= 0 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12h18" />
+            </svg>
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={currentHistoryIndex >= history.length - 1}
+            className={`p-2 rounded-full transition-colors ${
+              currentHistoryIndex >= history.length - 1
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7-7 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12h18" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setShowDeleteDialog(true)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -582,14 +738,57 @@ export default function OpportunityPage() {
                         </button>
                       )}
                     </button>
-                    <button
-                      onClick={(e) => handleDeleteOption(option.id)}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDuplicateOption(option.id)
+                        }}
+                        className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteOption(option.id)}
+                        className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {index > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMoveOption(index, 'left')
+                          }}
+                          className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {index < options.length - 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleMoveOption(index, 'right')
+                          }}
+                          className="w-8 h-8 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {index < options.length - 1 && (
                     <Select
