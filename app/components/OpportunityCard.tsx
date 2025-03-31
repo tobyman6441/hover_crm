@@ -133,12 +133,12 @@ export function OpportunityCard({
       onClick={handleClick}
       className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${isDraggable ? 'cursor-move' : 'cursor-pointer'}`}
     >
-      {/* Title and Status - First Line */}
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-medium text-gray-900">
+      {/* Title - Full Width */}
+      <div className="flex justify-between items-start mb-1">
+        <h3 className="text-sm font-medium text-gray-900 flex-1 mr-2">
           {title}
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -164,7 +164,12 @@ export function OpportunityCard({
         </div>
       </div>
 
-      {/* Last Updated - Second Line */}
+      {/* Status Badge */}
+      <Badge variant="outline" className="text-xs mb-2">
+        {column}
+      </Badge>
+
+      {/* Last Updated */}
       <p className="text-xs text-gray-500 mb-2">
         Last updated {new Date(lastUpdated).toLocaleDateString()}
       </p>
