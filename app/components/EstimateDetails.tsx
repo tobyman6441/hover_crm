@@ -6,6 +6,7 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { ChevronLeft, ChevronRight, Link as LinkIcon } from 'lucide-react'
+import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface EstimateDetailsProps {
   isOpen: boolean
@@ -55,12 +56,6 @@ export function EstimateDetails({
   const [isEditing, setIsEditing] = useState(false)
 
   const monthlyPayment = calculateMonthlyPayment(price, financeSettings.apr, financeSettings.termLength)
-
-  function calculateMonthlyPayment(principal: number, apr: number, months: number) {
-    const monthlyRate = (apr / 100) / 12
-    const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1)
-    return Math.round(payment)
-  }
 
   const handleShare = () => {
     const link = `https://example.com/estimate/${currentOptionId}`

@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { defaultColumns } from '@/app/config/columns'
 import { EstimateDetails } from '@/app/components/EstimateDetails'
+import { PriceSummary } from '@/app/components/PriceSummary'
+import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface Option {
   id: number
@@ -855,7 +857,7 @@ export default function OpportunityPage() {
                               <span className="text-sm font-medium text-gray-900">{option.content}</span>
                               <div className="flex flex-col gap-1">
                                 <span className="text-lg font-bold text-gray-900">${option.details.price.toLocaleString()}</span>
-                                <span className="text-xs text-gray-500">As low as ${Math.round(option.details.price / 12).toLocaleString()}/month</span>
+                                <span className="text-xs text-gray-500">As low as ${calculateMonthlyPayment(option.details.price).toLocaleString()}/month</span>
                               </div>
                               <div className="text-xs text-gray-600">
                                 <div className="font-medium text-gray-900">{option.details.title}</div>
@@ -943,6 +945,13 @@ export default function OpportunityPage() {
             </div>
           </div>
 
+          {/* Add PriceSummary component */}
+          {options.length > 0 && (
+            <div className="mt-8 px-4 max-w-4xl mx-auto">
+              <PriceSummary options={options} operators={operators} />
+            </div>
+          )}
+
           {options.length > 1 && (
             <>
               <button
@@ -961,8 +970,6 @@ export default function OpportunityPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-white via-white to-transparent w-16 h-full pointer-events-none" />
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-white via-white to-transparent w-16 h-full pointer-events-none" />
             </>
           )}
         </div>
