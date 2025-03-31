@@ -228,7 +228,7 @@ export default function KanbanView() {
   }
 
   return (
-    <main className="container mx-auto p-4">
+    <main className="container mx-auto p-4 h-screen flex flex-col">
       <nav className="flex items-center justify-between mb-8">
         <div className="h-8 w-24 relative">
         <Image
@@ -312,7 +312,7 @@ export default function KanbanView() {
           onDragEnd={handleDragEnd} 
           collisionDetection={closestCenter}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto flex-1">
             {columns.map((column) => (
               <div key={column.id} className="flex-1 min-w-[300px]">
                 <DroppableColumn 
@@ -349,7 +349,7 @@ export default function KanbanView() {
                   }}
                   onDeleteClick={() => handleDeleteColumn(column.id)}
                 >
-                  <div className="space-y-4 bg-gray-50 rounded-lg p-4 min-h-[200px]">
+                  <div className="space-y-4 bg-gray-50 rounded-lg p-4 h-full">
                     <SortableContext items={opportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} strategy={verticalListSortingStrategy}>
                       {opportunities
                         .filter(opportunity => opportunity.column === column.id)

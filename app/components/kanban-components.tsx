@@ -75,28 +75,43 @@ export function DroppableColumn({
     let totalApprovedAmount = 0
     let totalMinPrice = 0
     let totalMaxPrice = 0
-    let hasNonApprovedOptions = false
     let hasAnyOptions = false
+    let hasOnlyApprovedOptions = true
+    let hasRanges = false
+    let hasAnyApprovedOptions = false
+    let opportunitiesWithPrices = 0
 
     // Calculate total for each opportunity
     opportunities.forEach(opp => {
       const optionsWithPrices = opp.options.filter(option => option.details?.price)
-      if (optionsWithPrices.length > 0) hasAnyOptions = true
+      if (optionsWithPrices.length > 0) {
+        hasAnyOptions = true
+        opportunitiesWithPrices++
+      }
       
       // Get approved options
       const approvedOptions = optionsWithPrices.filter(option => option.isApproved)
       const approvedTotal = approvedOptions.reduce((sum, option) => sum + (option.details?.price || 0), 0)
       
-      // Check if this opportunity has any non-approved options with prices
-      const hasNonApprovedPricedOptions = optionsWithPrices.some(option => !option.isApproved)
+      // If this opportunity has any approved options
+      if (approvedOptions.length > 0) {
+        hasAnyApprovedOptions = true
+        totalApprovedAmount += approvedTotal
+        totalMinPrice += approvedTotal
+        totalMaxPrice += approvedTotal
+        return // Skip processing non-approved options for this opportunity
+      }
       
-      // Only count as non-approved if there are actually non-approved options with prices
-      if (hasNonApprovedPricedOptions) {
-        hasNonApprovedOptions = true
+      // If we get here, this opportunity has no approved options
+      hasOnlyApprovedOptions = false
+      
+      // Process non-approved options
+      const nonApprovedOptions = optionsWithPrices.filter(option => !option.isApproved)
+      
+      if (nonApprovedOptions.length > 0) {
         const andGroups: Option[][] = []
         let currentGroup: Option[] = []
 
-        const nonApprovedOptions = optionsWithPrices.filter(option => !option.isApproved)
         nonApprovedOptions.forEach((option, index) => {
           currentGroup.push(option)
           if (index < opp.operators.length && opp.operators[index].type === 'or') {
@@ -112,61 +127,81 @@ export function DroppableColumn({
           return group.reduce((sum, option) => sum + (option.details?.price || 0), 0)
         })
 
-        // For min price: include the minimum of non-approved options
-        totalMinPrice += Math.min(...andGroupTotals)
+        const minGroupTotal = Math.min(...andGroupTotals)
+        const maxGroupTotal = Math.max(...andGroupTotals)
         
-        // For max price: if there are approved options, use only those
-        // otherwise use the maximum of non-approved options
-        totalMaxPrice += approvedTotal > 0 ? approvedTotal : Math.max(...andGroupTotals)
+        // Check if this opportunity has a range
+        if (minGroupTotal !== maxGroupTotal) {
+          hasRanges = true
+        }
+
+        // Add the minimum of non-approved options to the total min price
+        totalMinPrice += minGroupTotal
+        
+        // Add the maximum of non-approved options to the total max price
+        totalMaxPrice += maxGroupTotal
       }
-      
-      // Add approved total to the total approved amount
-      totalApprovedAmount += approvedTotal
     })
 
     if (!hasAnyOptions) return null
-    
-    // If we only have approved options, show the exact total
-    if (!hasNonApprovedOptions && totalApprovedAmount > 0) {
-      return `$${totalApprovedAmount.toLocaleString()}`
+
+    // If all opportunities with prices have approved options, only show the approved amount in the main display
+    if (hasOnlyApprovedOptions && hasAnyApprovedOptions) {
+      return {
+        mainDisplay: `$${totalApprovedAmount.toLocaleString()} approved`,
+        approvedAmount: null
+      }
     }
-    
-    // Otherwise show the range
-    if (totalMinPrice === 0 && totalMaxPrice === 0) return null
-    return `$${totalMinPrice.toLocaleString()} - $${totalMaxPrice.toLocaleString()}`
+
+    // Return both displays for mixed approved/non-approved scenarios
+    return {
+      mainDisplay: totalMinPrice === totalMaxPrice 
+        ? `$${totalMinPrice.toLocaleString()}`
+        : `$${totalMinPrice.toLocaleString()} - $${totalMaxPrice.toLocaleString()}`,
+      approvedAmount: hasAnyApprovedOptions ? `$${totalApprovedAmount.toLocaleString()} approved` : null
+    }
   }
 
   const priceRange = getColumnPriceRange()
 
   return (
     <div ref={setNodeRef}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-baseline gap-2">
-          {isEditing ? (
-            editComponent
-          ) : (
-            <h2 
-              className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700"
-              onClick={onTitleClick}
+      <div className="flex flex-col mb-4">
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-baseline gap-2">
+            {isEditing ? (
+              editComponent
+            ) : (
+              <h2 
+                className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700"
+                onClick={onTitleClick}
+              >
+                {title}
+              </h2>
+            )}
+            {priceRange?.mainDisplay && (
+              <span className="text-xs text-gray-500">
+                {priceRange.mainDisplay}
+              </span>
+            )}
+          </div>
+          {onDeleteClick && (
+            <button
+              onClick={onDeleteClick}
+              className="text-gray-400 hover:text-gray-600"
             >
-              {title}
-            </h2>
-          )}
-          {priceRange && (
-            <span className="text-xs text-gray-500">
-              {priceRange}
-            </span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           )}
         </div>
-        {onDeleteClick && (
-          <button
-            onClick={onDeleteClick}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        {priceRange?.approvedAmount && (
+          <div className="mt-1.5 flex items-baseline">
+            <span className="text-xs text-green-600 font-medium">
+              {priceRange.approvedAmount}
+            </span>
+          </div>
         )}
       </div>
       {children}
