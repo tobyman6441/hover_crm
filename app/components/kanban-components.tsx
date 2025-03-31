@@ -8,6 +8,15 @@ import { Badge } from '@/components/ui/badge'
 interface DroppableColumnProps {
   id: string
   children: React.ReactNode
+  title: string
+  opportunities: {
+    options: Option[]
+    operators: Operator[]
+  }[]
+  onTitleClick?: () => void
+  onDeleteClick?: () => void
+  isEditing?: boolean
+  editComponent?: React.ReactNode
 }
 
 interface DraggableOpportunityProps {
@@ -20,6 +29,12 @@ interface Option {
   content: string
   isComplete: boolean
   isApproved?: boolean
+  details?: {
+    title: string
+    description: string
+    price: number
+    afterImage: string
+  }
 }
 
 interface Operator {
@@ -42,9 +57,121 @@ interface OpportunityCardProps {
   }
 }
 
-export function DroppableColumn({ id, children }: DroppableColumnProps) {
+export function DroppableColumn({ 
+  id, 
+  children, 
+  title, 
+  opportunities,
+  onTitleClick,
+  onDeleteClick,
+  isEditing,
+  editComponent
+}: DroppableColumnProps) {
   const { setNodeRef } = useDroppable({ id })
-  return <div ref={setNodeRef}>{children}</div>
+
+  const getColumnPriceRange = () => {
+    if (!opportunities || opportunities.length === 0) return null
+
+    let totalApprovedAmount = 0
+    let totalMinPrice = 0
+    let totalMaxPrice = 0
+    let hasNonApprovedOptions = false
+    let hasAnyOptions = false
+
+    // Calculate total for each opportunity
+    opportunities.forEach(opp => {
+      const optionsWithPrices = opp.options.filter(option => option.details?.price)
+      if (optionsWithPrices.length > 0) hasAnyOptions = true
+      
+      // Get approved options
+      const approvedOptions = optionsWithPrices.filter(option => option.isApproved)
+      const approvedTotal = approvedOptions.reduce((sum, option) => sum + (option.details?.price || 0), 0)
+      
+      // Check if this opportunity has any non-approved options with prices
+      const hasNonApprovedPricedOptions = optionsWithPrices.some(option => !option.isApproved)
+      
+      // Only count as non-approved if there are actually non-approved options with prices
+      if (hasNonApprovedPricedOptions) {
+        hasNonApprovedOptions = true
+        const andGroups: Option[][] = []
+        let currentGroup: Option[] = []
+
+        const nonApprovedOptions = optionsWithPrices.filter(option => !option.isApproved)
+        nonApprovedOptions.forEach((option, index) => {
+          currentGroup.push(option)
+          if (index < opp.operators.length && opp.operators[index].type === 'or') {
+            andGroups.push([...currentGroup])
+            currentGroup = []
+          }
+        })
+        if (currentGroup.length > 0) {
+          andGroups.push(currentGroup)
+        }
+
+        const andGroupTotals = andGroups.map(group => {
+          return group.reduce((sum, option) => sum + (option.details?.price || 0), 0)
+        })
+
+        // For min price: include the minimum of non-approved options
+        totalMinPrice += Math.min(...andGroupTotals)
+        
+        // For max price: if there are approved options, use only those
+        // otherwise use the maximum of non-approved options
+        totalMaxPrice += approvedTotal > 0 ? approvedTotal : Math.max(...andGroupTotals)
+      }
+      
+      // Add approved total to the total approved amount
+      totalApprovedAmount += approvedTotal
+    })
+
+    if (!hasAnyOptions) return null
+    
+    // If we only have approved options, show the exact total
+    if (!hasNonApprovedOptions && totalApprovedAmount > 0) {
+      return `$${totalApprovedAmount.toLocaleString()}`
+    }
+    
+    // Otherwise show the range
+    if (totalMinPrice === 0 && totalMaxPrice === 0) return null
+    return `$${totalMinPrice.toLocaleString()} - $${totalMaxPrice.toLocaleString()}`
+  }
+
+  const priceRange = getColumnPriceRange()
+
+  return (
+    <div ref={setNodeRef}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-baseline gap-2">
+          {isEditing ? (
+            editComponent
+          ) : (
+            <h2 
+              className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700"
+              onClick={onTitleClick}
+            >
+              {title}
+            </h2>
+          )}
+          {priceRange && (
+            <span className="text-xs text-gray-500">
+              {priceRange}
+            </span>
+          )}
+        </div>
+        {onDeleteClick && (
+          <button
+            onClick={onDeleteClick}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  )
 }
 
 export function DraggableOpportunity({ id, children }: DraggableOpportunityProps) {
@@ -113,15 +240,55 @@ export function OpportunityCard({
 
   const completedOptions = options.filter(option => option.isComplete)
 
+  const getPriceRange = () => {
+    const optionsWithPrices = options.filter(option => option.details?.price)
+    if (optionsWithPrices.length === 0) return null
+
+    // If there are approved options, show their sum
+    const approvedOptions = optionsWithPrices.filter(option => option.isApproved)
+    if (approvedOptions.length > 0) {
+      const approvedTotal = approvedOptions.reduce((sum, option) => sum + (option.details?.price || 0), 0)
+      return `$${approvedTotal.toLocaleString()} approved`
+    }
+
+    // Otherwise, show the range of all options
+    const andGroups: Option[][] = []
+    let currentGroup: Option[] = []
+
+    optionsWithPrices.forEach((option, index) => {
+      currentGroup.push(option)
+      if (index < operators.length && operators[index].type === 'or') {
+        andGroups.push([...currentGroup])
+        currentGroup = []
+      }
+    })
+    if (currentGroup.length > 0) {
+      andGroups.push(currentGroup)
+    }
+
+    const andGroupTotals = andGroups.map(group => {
+      return group.reduce((sum, option) => {
+        return sum + (option.details?.price || 0)
+      }, 0)
+    })
+
+    const minPrice = Math.min(...andGroupTotals)
+    const maxPrice = Math.max(...andGroupTotals)
+
+    if (minPrice === maxPrice) {
+      return `$${minPrice.toLocaleString()}`
+    }
+
+    return `$${minPrice.toLocaleString()} - $${maxPrice.toLocaleString()}`
+  }
+
   const getComparisonSummary = () => {
     if (completedOptions.length <= 1) return null
 
     const groups: string[][] = []
     let currentGroup: string[] = [completedOptions[0].content]
 
-    // Make sure we don't try to access operators beyond its length
     for (let i = 0; i < completedOptions.length - 1; i++) {
-      // If we don't have an operator for this position, treat it as 'and'
       const operatorType = operators[i]?.type || 'and'
       
       if (operatorType === 'and') {
@@ -153,7 +320,6 @@ export function OpportunityCard({
         ...dragHandleProps.attributes,
         ...dragHandleProps.listeners,
         onPointerDown: (e: React.PointerEvent) => {
-          // Don't initiate drag if clicking action buttons
           if ((e.target as HTMLElement).closest('.action-button')) {
             return
           }
@@ -224,6 +390,13 @@ export function OpportunityCard({
                 </div>
               ))}
             </div>
+            {getPriceRange() && (
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className={`text-sm font-semibold ${options.some(opt => opt.isApproved) ? 'text-green-700' : 'text-gray-900'}`}>
+                  {getPriceRange()}
+                </span>
+              </div>
+            )}
           </>
         ) : (
           <p className="text-sm text-gray-500 italic">No options added yet</p>

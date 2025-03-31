@@ -315,8 +315,12 @@ export default function KanbanView() {
           <div className="flex gap-4 overflow-x-auto pb-4">
             {columns.map((column) => (
               <div key={column.id} className="flex-1 min-w-[300px]">
-                <div className="flex items-center justify-between mb-4">
-                  {editingColumnId === column.id ? (
+                <DroppableColumn 
+                  id={column.id}
+                  title={column.title}
+                  opportunities={opportunities.filter(opp => opp.column === column.id)}
+                  isEditing={editingColumnId === column.id}
+                  editComponent={
                     <input
                       type="text"
                       value={editingColumnName}
@@ -338,27 +342,13 @@ export default function KanbanView() {
                       className="text-sm font-medium bg-transparent border-b-2 border-gray-200 focus:border-gray-400 outline-none px-1"
                       autoFocus
                     />
-                  ) : (
-                    <h2 
-                      className="text-sm font-medium text-gray-900 cursor-pointer hover:text-gray-700"
-                      onClick={() => {
-                        setEditingColumnId(column.id)
-                        setEditingColumnName(column.title)
-                      }}
-                    >
-                      {column.title}
-                    </h2>
-                  )}
-                  <button
-                    onClick={() => handleDeleteColumn(column.id)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <DroppableColumn id={column.id}>
+                  }
+                  onTitleClick={() => {
+                    setEditingColumnId(column.id)
+                    setEditingColumnName(column.title)
+                  }}
+                  onDeleteClick={() => handleDeleteColumn(column.id)}
+                >
                   <div className="space-y-4 bg-gray-50 rounded-lg p-4 min-h-[200px]">
                     <SortableContext items={opportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} strategy={verticalListSortingStrategy}>
                       {opportunities
