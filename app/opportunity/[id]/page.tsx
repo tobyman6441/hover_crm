@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { defaultColumns } from '@/app/config/columns'
 
 interface Option {
   id: number
@@ -129,7 +130,34 @@ export default function OpportunityPage() {
   const [selectedJobs, setSelectedJobs] = useState<Job[]>([])
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [currentColumn, setCurrentColumn] = useState('Drafts')
+  const [currentColumn, setCurrentColumn] = useState('drafts')
+  const [columns, setColumns] = useState<{id: string, title: string}[]>([])
+
+  // Load columns from localStorage
+  useEffect(() => {
+    const loadColumns = () => {
+      const savedColumns = JSON.parse(localStorage.getItem('columns') || '[]')
+      if (savedColumns.length > 0) {
+        setColumns(savedColumns)
+      } else {
+        // Use defaultColumns as fallback if no columns in localStorage
+        setColumns(defaultColumns)
+      }
+    }
+
+    // Initial load
+    loadColumns()
+
+    // Set up storage event listener
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'columns') {
+        loadColumns()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
 
   // Load existing opportunity data when the component mounts
   useEffect(() => {
@@ -141,12 +169,14 @@ export default function OpportunityPage() {
       setTitle(existingOpportunity.title)
       setOptions(existingOpportunity.options || [])
       setOperators(existingOpportunity.operators || [])
-      setCurrentColumn(existingOpportunity.column)
+      setCurrentColumn(existingOpportunity.column || 'drafts')
     } else {
-      // Initialize new opportunity with an empty option
+      // Initialize new opportunity with an empty option and default column
       setOptions([{ id: 1, content: '+ Option 1', isComplete: false }])
+      const defaultColumn = columns[0]?.id || 'drafts'
+      setCurrentColumn(defaultColumn)
     }
-  }, [])
+  }, [columns]) // Re-run when columns change
 
   const handleAddOption = () => {
     const newOption = {
@@ -328,13 +358,24 @@ export default function OpportunityPage() {
     return matchesSearch && matchesStatus && matchesMeasurementType
   })
 
-  const handleStatusChange = (value: string) => {
-    setSelectedStatuses(prev => {
-      if (prev.includes(value)) {
-        return prev.filter(status => status !== value)
+  const handleStatusChange = (newStatus: string) => {
+    setCurrentColumn(newStatus)
+    
+    // Save to localStorage immediately
+    const opportunityId = window.location.pathname.split('/').pop()
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityId)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        column: newStatus,
+        lastUpdated: new Date().toISOString()
       }
-      return [...prev, value]
-    })
+      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    }
+    
+    toast.success(`Moved to ${columns.find(col => col.id === newStatus)?.title || newStatus}`)
   }
 
   const handleMeasurementTypeChange = (value: string) => {
@@ -406,8 +447,6 @@ export default function OpportunityPage() {
     const existingIndex = opportunities.findIndex((opp: any) => opp.id === opportunityData.id)
     
     if (existingIndex >= 0) {
-      // Preserve the existing column when updating
-      opportunityData.column = opportunities[existingIndex].column
       opportunities[existingIndex] = opportunityData
     } else {
       opportunities.push(opportunityData)
@@ -480,9 +519,23 @@ export default function OpportunityPage() {
               {title}
             </h1>
           )}
-          <Badge variant="outline" className="text-xs">
-            {currentColumn}
-          </Badge>
+          <Select
+            value={currentColumn}
+            onValueChange={handleStatusChange}
+          >
+            <SelectTrigger className="h-6 px-2">
+              <Badge variant="outline" className="text-xs font-normal">
+                {columns.find(col => col.id === currentColumn)?.title || 'No Status'}
+              </Badge>
+            </SelectTrigger>
+            <SelectContent>
+              {columns.map(column => (
+                <SelectItem key={column.id} value={column.id}>
+                  {column.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <button
           onClick={() => setShowDeleteDialog(true)}
