@@ -907,7 +907,7 @@ export default function OpportunityPage() {
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
-                                window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?jobId=15273950'
+                                window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?bulkApplyFlow=true&jobId=15273950'
                               }}
                               className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
                             >

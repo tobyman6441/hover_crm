@@ -198,22 +198,26 @@ export function DroppableColumn({
             {opportunities.length}
           </span>
         </div>
-        <button
-          onClick={onDeleteClick}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {onDeleteClick && (
+          <button
+            onClick={onDeleteClick}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
-      {priceRange?.mainDisplay && (
-        <div className="mb-4">
-          <div className="text-sm font-medium text-gray-900">
-            {priceRange.mainDisplay}
-          </div>
+
+      {priceRange && (
+        <div className={cn(
+          "text-sm font-medium mb-4",
+          title === "In Progress" && "text-green-600"
+        )}>
+          {priceRange.mainDisplay}
           {priceRange.approvedAmount && (
-            <div className="mt-1 text-xs text-green-600 font-medium">
+            <span className="ml-2 text-gray-500">
               {priceRange.approvedAmount}
-            </div>
+            </span>
           )}
         </div>
       )}

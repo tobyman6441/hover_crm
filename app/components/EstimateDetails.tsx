@@ -80,7 +80,7 @@ export function EstimateDetails({
   }
 
   const handleEditScope = () => {
-    window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?jobId=15273950'
+    window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?bulkApplyFlow=true&jobId=15273950'
   }
 
   const handleFinanceSettingsChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof FinanceSettings) => {
