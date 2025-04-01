@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { calculateMonthlyPayment } from '@/app/utils/calculations'
 import { Badge } from "@/components/ui/badge"
+import { useState } from 'react'
+import { Pencil, Check, X } from 'lucide-react'
 
 interface Option {
   id: number
@@ -26,6 +28,9 @@ interface PriceSummaryProps {
 }
 
 export function PriceSummary({ options, operators }: PriceSummaryProps) {
+  const [editingPackage, setEditingPackage] = useState<number | null>(null)
+  const [packageNames, setPackageNames] = useState<{ [key: number]: string }>({})
+
   // Group options by "And" relationships
   const andGroups: Option[][] = []
   let currentGroup: Option[] = []
@@ -54,10 +59,47 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
     }
   })
 
+  const handleEditPackage = (index: number) => {
+    setEditingPackage(index)
+  }
+
+  const handleSavePackage = (index: number) => {
+    setEditingPackage(null)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingPackage(null)
+  }
+
+  const handlePackageNameChange = (index: number, value: string) => {
+    setPackageNames(prev => ({
+      ...prev,
+      [index]: value
+    }))
+  }
+
   return (
     <Card className="w-full">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Price Summary</CardTitle>
+        <button
+          onClick={() => {
+            const data = {
+              options,
+              operators,
+              packageNames
+            }
+            const encodedData = encodeURIComponent(JSON.stringify(data))
+            const link = `${window.location.origin}/public/compare?data=${encodedData}`
+            window.open(link, '_blank', 'noopener,noreferrer')
+          }}
+          className="px-3 py-1.5 rounded-full text-xs font-medium bg-black text-white hover:bg-gray-900 flex items-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          Share
+        </button>
       </CardHeader>
       <CardContent className="space-y-6">
         {andGroupTotals.map((group, index) => (
@@ -66,7 +108,41 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
               group.allApproved ? 'bg-green-50' : ''
             }`}>
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium">Package {index + 1}</h4>
+                <div className="flex items-center gap-2">
+                  {editingPackage === index ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={packageNames[index] || `Package ${index + 1}`}
+                        onChange={(e) => handlePackageNameChange(index, e.target.value)}
+                        className="px-2 py-1 text-sm border rounded"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleSavePackage(index)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="font-medium">{packageNames[index] || `Package ${index + 1}`}</h4>
+                      <button
+                        onClick={() => handleEditPackage(index)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
+                </div>
                 <div className="text-sm text-gray-500 space-y-1">
                   {group.options.map((opt, optIndex) => (
                     <div key={opt.id} className="flex items-center gap-2">

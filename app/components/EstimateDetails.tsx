@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { ChevronLeft, ChevronRight, Link as LinkIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Link as LinkIcon, Undo2, Redo2 } from 'lucide-react'
 import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface EstimateDetailsProps {
@@ -21,6 +21,14 @@ interface FinanceSettings {
   termLength: number
 }
 
+interface HistoryState {
+  materials: Array<{
+    id: number;
+    title: string;
+    description: string;
+  }>;
+}
+
 export function EstimateDetails({ 
   isOpen, 
   onClose, 
@@ -28,11 +36,20 @@ export function EstimateDetails({
   totalOptions,
   onNavigate
 }: EstimateDetailsProps) {
-  const [title, setTitle] = useState('GAF Timberline HDZ')
-  const [description, setDescription] = useState(
-    'Shingles from GAF. The American Harvest® Collection with Advanced Protection® Shingle Technology will give you the modern architectural style you want, at a price you can afford, with rugged, dependable performance that only a Timberline® roof can offer.'
-  )
-  const [price, setPrice] = useState(24756)
+  const [materials, setMaterials] = useState([
+    {
+      id: 1,
+      title: "GAF Timberline HDZ",
+      description: "Shingles from GAF. The American Harvest® Collection with Advanced Protection® Shingle Technology will give you the modern architectural style you want, at a price you can afford, with rugged, dependable performance that only a Timberline® roof can offer."
+    },
+    {
+      id: 2,
+      title: "Hardie® Artisan® V Groove Siding",
+      description: "Primed offers the classic charm of tongue-and-groove siding with the lasting durability of James Hardie's proprietary fiber cement. Featuring deep V-groove lines and precise craftsmanship, it delivers a timeless, elegant appearance ready for customization with your choice of paint. This siding is primed and engineered for superior weather resistance and dimensional stability."
+    }
+  ])
+
+  const [price, setPrice] = useState(156799)
   const [isEditingPrice, setIsEditingPrice] = useState(false)
   const [showFinanceSettings, setShowFinanceSettings] = useState(false)
   const [financeSettings, setFinanceSettings] = useState<FinanceSettings>({
@@ -54,10 +71,13 @@ export function EstimateDetails({
   const [isSliderVisible, setIsSliderVisible] = useState(false)
   const [shareLink, setShareLink] = useState('')
 
+  const [history, setHistory] = useState<HistoryState[]>([{ materials }])
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0)
+
   const monthlyPayment = calculateMonthlyPayment(price, financeSettings.apr, financeSettings.termLength)
 
   const handleShare = () => {
-    const link = `https://example.com/estimate/${currentOptionId}`
+    const link = `${window.location.origin}/public/show/${currentOptionId}`
     setShareLink(link)
     navigator.clipboard.writeText(link)
     toast.success('Link copied to clipboard')
@@ -79,7 +99,7 @@ export function EstimateDetails({
   }
 
   const handleEditScope = () => {
-    window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?bulkApplyFlow=true&jobId=15273950'
+    window.open('https://hover.to/ehi/#/project_estimator/questions/facets/select_roof_facets?jobId=15273950&productionListId=465247&recalculate=true&templateIds=1254707,1247492', '_blank', 'noopener,noreferrer')
   }
 
   const handleFinanceSettingsChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof FinanceSettings) => {
@@ -91,11 +111,46 @@ export function EstimateDetails({
 
   const handleClose = () => {
     onClose({
-      title,
-      description,
+      title: materials[0].title,
+      description: materials[0].description,
       price,
-      afterImage: '/Timberline-hdz.png'
+      afterImage: '/after2.png'
     })
+  }
+
+  const addToHistory = (newMaterials: typeof materials) => {
+    const newHistory = history.slice(0, currentHistoryIndex + 1)
+    newHistory.push({ materials: newMaterials })
+    setHistory(newHistory)
+    setCurrentHistoryIndex(newHistory.length - 1)
+  }
+
+  const handleUndo = () => {
+    if (currentHistoryIndex > 0) {
+      setCurrentHistoryIndex(currentHistoryIndex - 1)
+      setMaterials(history[currentHistoryIndex - 1].materials)
+    }
+  }
+
+  const handleRedo = () => {
+    if (currentHistoryIndex < history.length - 1) {
+      setCurrentHistoryIndex(currentHistoryIndex + 1)
+      setMaterials(history[currentHistoryIndex + 1].materials)
+    }
+  }
+
+  const handleDeleteMaterial = (id: number) => {
+    const newMaterials = materials.filter(material => material.id !== id)
+    setMaterials(newMaterials)
+    addToHistory(newMaterials)
+  }
+
+  const handleUpdateMaterial = (id: number, field: 'title' | 'description', value: string) => {
+    const newMaterials = materials.map(material => 
+      material.id === id ? { ...material, [field]: value } : material
+    )
+    setMaterials(newMaterials)
+    addToHistory(newMaterials)
   }
 
   return (
@@ -111,7 +166,7 @@ export function EstimateDetails({
               <div className="relative">
                 <div className="relative h-[400px] mb-2">
                   <Image
-                    src="/before.png"
+                    src="/before2.png"
                     alt="Before"
                     className={`absolute inset-0 object-cover transition-opacity duration-300 ${
                       isSliderVisible ? 'opacity-100' : 'opacity-0'
@@ -119,7 +174,7 @@ export function EstimateDetails({
                     fill
                   />
                   <Image
-                    src="/Timberline-hdz.png"
+                    src="/after2.png"
                     alt="After"
                     className={`absolute inset-0 object-cover transition-opacity duration-300 ${
                       isSliderVisible ? 'opacity-0' : 'opacity-100'
@@ -128,17 +183,7 @@ export function EstimateDetails({
                   />
                 </div>
 
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <button
-                    onClick={() => setIsSliderVisible(false)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                      !isSliderVisible 
-                        ? 'bg-black text-white' 
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    After
-                  </button>
+                <div className="flex items-center justify-center gap-2 mb-4">
                   <button
                     onClick={() => setIsSliderVisible(true)}
                     className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
@@ -149,49 +194,120 @@ export function EstimateDetails({
                   >
                     Before
                   </button>
+                  <a
+                    href="https://hover.to/designer/share/d8fdc294-020d-4566-8df3-7987ed51b3ee"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-1.5 text-sm font-medium rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors"
+                  >
+                    Design ideas
+                  </a>
+                  <a
+                    href="https://hover.to/design-studio/15273950/model/15271361"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-1.5 text-sm font-medium rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors"
+                  >
+                    Edit design & materials
+                  </a>
+                  <button
+                    onClick={() => setIsSliderVisible(false)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
+                      !isSliderVisible 
+                        ? 'bg-black text-white' 
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
+                  >
+                    After
+                  </button>
                 </div>
 
-                <div className="space-y-4 mb-16">
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="text-2xl font-bold w-full bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2"
-                  />
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full min-h-[100px] bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2 resize-none"
-                  />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleUndo}
+                      disabled={currentHistoryIndex === 0}
+                      className="h-8 w-8"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRedo}
+                      disabled={currentHistoryIndex === history.length - 1}
+                      className="h-8 w-8"
+                    >
+                      <Redo2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className={`grid ${materials.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-6`}>
+                  {materials.map((material) => (
+                    <div key={material.id} className={`space-y-2 group relative ${materials.length === 1 ? 'max-w-2xl mx-auto w-full' : ''}`}>
+                      <button
+                        onClick={() => handleDeleteMaterial(material.id)}
+                        className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full z-10"
+                      >
+                        <svg className="w-4 h-4 text-gray-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      <input
+                        type="text"
+                        value={material.title}
+                        onChange={(e) => handleUpdateMaterial(material.id, 'title', e.target.value)}
+                        className={`text-xl font-bold w-full bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2 ${materials.length === 1 ? 'text-center' : ''}`}
+                      />
+                      <textarea
+                        value={material.description}
+                        onChange={(e) => handleUpdateMaterial(material.id, 'description', e.target.value)}
+                        className={`w-full h-[120px] bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2 resize-none text-sm ${materials.length === 1 ? 'text-center' : ''}`}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Price and Edit Scope section */}
               <div className="fixed bottom-0 left-0 right-[450px] bg-white z-10">
                 <div className="px-2 py-4">
-                  <div className="flex items-center gap-8 max-w-[95%] mx-auto">
-                    <div className="text-2xl font-bold">
-                      {isEditingPrice ? (
-                        <input
-                          type="number"
-                          value={price}
-                          onChange={(e) => setPrice(Number(e.target.value))}
-                          onBlur={() => setIsEditingPrice(false)}
-                          className="w-32 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2"
-                          autoFocus
-                        />
-                      ) : (
-                        <span onClick={() => setIsEditingPrice(true)} className="cursor-pointer hover:opacity-80 transition-opacity">
-                          ${price.toLocaleString()}
-                        </span>
-                      )}
+                  <div className="flex items-center justify-between max-w-[95%] mx-auto">
+                    <div className="flex items-center gap-8">
+                      <div className="text-2xl font-bold">
+                        {isEditingPrice ? (
+                          <input
+                            type="number"
+                            value={price}
+                            onChange={(e) => setPrice(Number(e.target.value))}
+                            onBlur={() => setIsEditingPrice(false)}
+                            className="w-32 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2"
+                            autoFocus
+                          />
+                        ) : (
+                          <span onClick={() => setIsEditingPrice(true)} className="cursor-pointer hover:opacity-80 transition-opacity">
+                            ${price.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <div 
+                        className="text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors"
+                        onClick={() => setShowFinanceSettings(true)}
+                      >
+                        As low as ${monthlyPayment}/mo
+                      </div>
                     </div>
-                    <div 
-                      className="text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors"
-                      onClick={() => setShowFinanceSettings(true)}
+                    <a
+                      href="https://hover.to/ehi/#/project/15273950/scope?orgId=823697&productionListId=465247"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                     >
-                      As low as ${monthlyPayment}/mo
-                    </div>
+                      View calculations →
+                    </a>
                   </div>
                 </div>
               </div>

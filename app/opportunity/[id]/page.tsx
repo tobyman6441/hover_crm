@@ -134,7 +134,7 @@ const jobs: Job[] = [
   }
 ]
 
-export default function OpportunityPage() {
+export default function OpportunityPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [options, setOptions] = useState<Option[]>([])
   const [operators, setOperators] = useState<Operator[]>([])
@@ -346,7 +346,8 @@ export default function OpportunityPage() {
       id: Math.max(...options.map(opt => opt.id)) + 1,
       content: optionToDuplicate.content,
       isComplete: optionToDuplicate.isComplete,
-      isApproved: optionToDuplicate.isApproved
+      isApproved: optionToDuplicate.isApproved,
+      details: optionToDuplicate.details ? { ...optionToDuplicate.details } : undefined
     }
     
     const optionIndex = options.findIndex(opt => opt.id === optionId)
@@ -906,23 +907,54 @@ export default function OpportunityPage() {
                         {/* Action Buttons */}
                         {option.isComplete && (
                           <div className="w-full p-4 flex flex-col gap-2 mt-auto">
+                            {option.details && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleToggleApproval(option.id)
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer text-center ${
+                                  option.isApproved
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                }`}
+                              >
+                                {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
+                              </div>
+                            )}
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleToggleApproval(option.id)
-                              }}
-                              className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer text-center ${
-                                option.isApproved
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                              }`}
-                            >
-                              {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
-                            </div>
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                window.location.href = 'https://hover.to/ehi/#/project_estimator/select_templates?bulkApplyFlow=true&jobId=15273950'
+                                window.open('https://hover.to/design-studio/15273950/model/15271361', '_blank', 'noopener,noreferrer')
+                                // Add details after clicking Calculate costs & pricing
+                                const updatedOptions = options.map(opt => 
+                                  opt.id === option.id ? { 
+                                    ...opt, 
+                                    details: {
+                                      title: "GAF Timberline HDZ",
+                                      description: "Shingles from GAF. The American Harvest® Collection with Advanced Protection® Shingle Technology will give you the modern architectural style you want, at a price you can afford, with rugged, dependable performance that only a Timberline® roof can offer.",
+                                      price: 156799,
+                                      afterImage: '/after2.png'
+                                    }
+                                  } : opt
+                                )
+                                setOptions(updatedOptions)
+                                
+                                // Save to localStorage immediately
+                                const opportunityId = window.location.pathname.split('/').pop()
+                                const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
+                                const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
+                                
+                                if (existingIndex >= 0) {
+                                  opportunities[existingIndex] = {
+                                    ...opportunities[existingIndex],
+                                    options: updatedOptions,
+                                    lastUpdated: new Date().toISOString()
+                                  }
+                                  localStorage.setItem('opportunities', JSON.stringify(opportunities))
+                                }
+                                
+                                toast.success('Auto saved')
                               }}
                               className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
                             >
@@ -931,19 +963,21 @@ export default function OpportunityPage() {
                               </svg>
                               Calculate costs & pricing
                             </div>
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleShowDetails(option.id)
-                              }}
-                              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              Show details
-                            </div>
+                            {option.details && (
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleShowDetails(option.id)
+                                }}
+                                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                Show details
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1028,12 +1062,12 @@ export default function OpportunityPage() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        statuses.length > 0
+                        selectedStatuses.length > 0
                           ? 'border-emerald-600 bg-emerald-600 text-white'
                           : 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
                       }`}>
                         <Filter className="w-3 h-3" />
-                        Status {statuses.length > 0 && `(${statuses.length})`}
+                        Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-2" side="bottom" align="start">
@@ -1063,12 +1097,12 @@ export default function OpportunityPage() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                        measurementTypes.length > 0
+                        selectedMeasurementTypes.length > 0
                           ? 'border-emerald-600 bg-emerald-600 text-white'
                           : 'border-gray-200 bg-gray-100 text-gray-900 hover:bg-gray-200'
                       }`}>
                         <Filter className="w-3 h-3" />
-                        Type {measurementTypes.length > 0 && `(${measurementTypes.length})`}
+                        Type {selectedMeasurementTypes.length > 0 && `(${selectedMeasurementTypes.length})`}
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-2" side="bottom" align="start">
@@ -1078,13 +1112,13 @@ export default function OpportunityPage() {
                             key={type}
                             onClick={() => handleMeasurementTypeChange(type)}
                             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm ${
-                              measurementTypes.includes(type)
+                              selectedMeasurementTypes.includes(type)
                                 ? 'bg-emerald-50 text-emerald-900'
                                 : 'hover:bg-gray-50'
                             }`}
                           >
                             <span>{type}</span>
-                            {measurementTypes.includes(type) && (
+                            {selectedMeasurementTypes.includes(type) && (
                               <svg className="w-4 h-4 ml-auto" viewBox="0 0 24 24" fill="none">
                                 <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
