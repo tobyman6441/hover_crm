@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { calculateMonthlyPayment } from '@/app/utils/calculations';
@@ -43,7 +43,6 @@ interface ShowData {
 export default function PublicShowPage({ params }: { params: { id: string } }) {
   const [showData, setShowData] = useState<ShowData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSliderVisible, setIsSliderVisible] = useState(false);
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -158,7 +157,7 @@ export default function PublicShowPage({ params }: { params: { id: string } }) {
 
             {/* Products */}
             <div className="space-y-8">
-              {showData.options.map((option, index) => (
+              {showData.options.map((option) => (
                 <div key={option.id} className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold">{option.content}</h2>
