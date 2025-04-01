@@ -41,7 +41,12 @@ interface ShowData {
   title: string;
 }
 
-export default function PublicShowPage({ params }: { params: { id: string } }) {
+export default function PublicShowPage({
+  params,
+}: {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const [showData, setShowData] = useState<ShowData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
