@@ -38,7 +38,7 @@ interface Option {
 
 interface ShowData {
   options: Option[];
-  operators: any[];
+  operators: Array<{ id: number; name: string }>;
   packageNames: { [key: number]: string };
   title: string;
 }

@@ -1,12 +1,39 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
-import { toast } from 'sonner'
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { ChevronLeft, ChevronRight, Undo2, Redo2 } from 'lucide-react'
 import { calculateMonthlyPayment } from '@/app/utils/calculations'
+
+interface Option {
+  id: number;
+  content: string;
+  isComplete: boolean;
+  isApproved?: boolean;
+  details?: {
+    title: string;
+    description: string;
+    price: number;
+    afterImage: string;
+    beforeImage: string;
+    materials: Array<{
+      id: number;
+      title: string;
+      description: string;
+    }>;
+    sections: Array<{
+      id: number;
+      title: string;
+      content: string;
+    }>;
+    financeSettings?: {
+      apr: number;
+      termLength: number;
+    };
+  };
+}
 
 interface EstimateDetailsProps {
   isOpen: boolean
@@ -142,7 +169,7 @@ export function EstimateDetails({
     }
 
     // Update the option in the data
-    const updatedOptions = existingData.options.map((opt: any) => 
+    const updatedOptions = existingData.options.map((opt: Option) => 
       opt.id === currentOptionId ? updatedOption : opt
     )
 

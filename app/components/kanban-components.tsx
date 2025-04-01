@@ -428,8 +428,8 @@ export function OpportunityCard({
               {getComparisonSummary()}
             </div>
             <div className="space-y-1">
-              {completedOptions.map((option) => (
-                <div key={option.id} className="flex items-center gap-2 text-sm text-gray-600">
+              {completedOptions.map((option, index) => (
+                <div key={`${option.id}-${index}-${option.content}`} className="flex items-center gap-2 text-sm text-gray-600">
                   {option.isApproved ? (
                     <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
