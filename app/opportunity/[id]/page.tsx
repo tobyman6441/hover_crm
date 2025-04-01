@@ -134,7 +134,7 @@ const jobs: Job[] = [
   }
 ]
 
-export default function OpportunityPage({ params }: { params: { id: string } }) {
+export default function OpportunityPage() {
   const router = useRouter()
   const [options, setOptions] = useState<Option[]>([])
   const [operators, setOperators] = useState<Operator[]>([])

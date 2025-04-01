@@ -44,6 +44,7 @@ export default function PublicShowPage({ params }: { params: { id: string } }) {
   const [showData, setShowData] = useState<ShowData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSliderVisible, setIsSliderVisible] = useState(false);
+  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
 
   useEffect(() => {
     // Get data from URL parameters
@@ -103,6 +104,14 @@ export default function PublicShowPage({ params }: { params: { id: string } }) {
 
   const monthlyPayment = calculateMonthlyPayment(totalPrice, 6.99, 60);
 
+  const handleNavigateDetails = (direction: 'prev' | 'next') => {
+    const currentIndex = showData.options.findIndex(opt => opt.id === selectedOptionId);
+    const newIndex = direction === 'prev' 
+      ? (currentIndex - 1 + showData.options.length) % showData.options.length
+      : (currentIndex + 1) % showData.options.length;
+    setSelectedOptionId(showData.options[newIndex].id);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
@@ -111,14 +120,12 @@ export default function PublicShowPage({ params }: { params: { id: string } }) {
             {/* Navigation Buttons */}
             <div className="flex items-center justify-center gap-2 mb-4">
               <button
-                onClick={() => setIsSliderVisible(true)}
+                onClick={() => handleNavigateDetails('prev')}
                 className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                  isSliderVisible 
-                    ? 'bg-black text-white' 
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  selectedOptionId === showData.options[0]?.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
               >
-                Before
+                <ChevronLeft className="w-4 h-4" />
               </button>
               <a
                 href="https://hover.to/designer/share/d8fdc294-020d-4566-8df3-7987ed51b3ee"
@@ -129,22 +136,20 @@ export default function PublicShowPage({ params }: { params: { id: string } }) {
                 Design ideas
               </a>
               <button
-                onClick={() => setIsSliderVisible(false)}
+                onClick={() => handleNavigateDetails('next')}
                 className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                  !isSliderVisible 
-                    ? 'bg-black text-white' 
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  selectedOptionId === showData.options[showData.options.length - 1]?.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
               >
-                After
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
             {/* Image Slider */}
             <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
               <Image
-                src={isSliderVisible ? showData.options[0]?.details?.beforeImage || "" : showData.options[0]?.details?.afterImage || ""}
-                alt={isSliderVisible ? "Before" : "After"}
+                src={selectedOptionId ? showData.options.find(opt => opt.id === selectedOptionId)?.details?.beforeImage || "" : showData.options[0]?.details?.beforeImage || ""}
+                alt={selectedOptionId ? "Before" : "Before"}
                 fill
                 className="object-contain"
                 priority

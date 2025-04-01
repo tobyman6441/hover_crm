@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { calculateMonthlyPayment } from '@/app/utils/calculations'
 import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Image from 'next/image'
 
 interface Option {
   id: number
@@ -148,10 +149,11 @@ export default function PublicComparePage() {
                         </div>
                         {opt.details?.afterImage && (
                           <div className="relative aspect-video rounded-lg overflow-hidden">
-                            <img
+                            <Image
                               src={opt.details.afterImage}
                               alt={opt.details.title}
-                              className="object-cover w-full h-full"
+                              fill
+                              className="object-cover"
                             />
                           </div>
                         )}
@@ -222,10 +224,11 @@ export default function PublicComparePage() {
                                 </div>
                                 {opt.details?.afterImage && (
                                   <div className="relative aspect-video rounded-lg overflow-hidden">
-                                    <img
+                                    <Image
                                       src={opt.details.afterImage}
                                       alt={opt.details.title}
-                                      className="object-cover w-full h-full"
+                                      fill
+                                      className="object-cover"
                                     />
                                   </div>
                                 )}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
 
-export default function ProjectShowPage({ params }: { params: { id: string } }) {
+export default function ProjectShowPage() {
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">

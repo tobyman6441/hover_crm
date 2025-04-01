@@ -63,7 +63,7 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
     setEditingPackage(index)
   }
 
-  const handleSavePackage = (index: number) => {
+  const handleSavePackage = () => {
     setEditingPackage(null)
   }
 
@@ -119,7 +119,7 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
                         autoFocus
                       />
                       <button
-                        onClick={() => handleSavePackage(index)}
+                        onClick={() => handleSavePackage()}
                         className="p-1 hover:bg-gray-100 rounded"
                       >
                         <Check className="w-4 h-4" />
