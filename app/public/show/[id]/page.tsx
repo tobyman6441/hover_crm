@@ -4,8 +4,6 @@ import { Card } from "@/components/ui/card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { calculateMonthlyPayment } from '@/app/utils/calculations';
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Option {
   id: number;
