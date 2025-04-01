@@ -44,6 +44,9 @@ interface Option {
     price: number
     afterImage: string
     address?: string
+    materials?: string[]
+    sections?: string[]
+    beforeImage?: string
   }
 }
 

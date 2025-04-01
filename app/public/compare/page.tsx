@@ -17,6 +17,17 @@ interface Option {
     description: string
     price: number
     afterImage: string
+    beforeImage?: string
+    materials?: Array<{
+      id: number
+      title: string
+      description: string
+    }>
+    sections?: Array<{
+      id: number
+      title: string
+      content: string
+    }>
   }
 }
 
@@ -138,7 +149,7 @@ export default function PublicComparePage() {
                 <CardContent>
                   <div className="space-y-4">
                     {group.options.map((opt) => (
-                      <div key={opt.id} className="space-y-2">
+                      <div key={opt.id} className="space-y-4">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{opt.content}</span>
                           {opt.isApproved && (
@@ -157,24 +168,36 @@ export default function PublicComparePage() {
                             />
                           </div>
                         )}
-                        <p className="text-sm text-gray-600">{opt.details?.description}</p>
-                        <button
-                          onClick={() => {
-                            const storageKey = `show_${opt.id}`
-                            const storedData = localStorage.getItem(storageKey)
-                            const data = storedData ? JSON.parse(storedData) : {
-                              options: [opt],
-                              operators: [],
-                              packageNames: { 0: opt.content }
-                            }
-                            const encodedData = encodeURIComponent(JSON.stringify(data))
-                            const link = `${window.location.origin}/public/show/${opt.id}?data=${encodedData}`
-                            window.open(link, '_blank', 'noopener,noreferrer')
-                          }}
-                          className="w-full px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-gray-900 transition-colors"
-                        >
-                          View Details
-                        </button>
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="font-semibold mb-2">{opt.details?.title}</h3>
+                            <p className="text-sm text-gray-600">{opt.details?.description}</p>
+                          </div>
+                          
+                          {opt.details?.materials && opt.details.materials.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="font-medium">Materials</h4>
+                              {opt.details.materials.map((material) => (
+                                <div key={material.id} className="space-y-1">
+                                  <p className="text-sm font-medium">{material.title}</p>
+                                  <p className="text-sm text-gray-600">{material.description}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {opt.details?.sections && opt.details.sections.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="font-medium">Project Details</h4>
+                              {opt.details.sections.map((section) => (
+                                <div key={section.id} className="space-y-1">
+                                  <p className="text-sm font-medium">{section.title}</p>
+                                  <p className="text-sm text-gray-600">{section.content}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                     <div className="pt-4 border-t">
@@ -213,7 +236,7 @@ export default function PublicComparePage() {
                         <CardContent>
                           <div className="space-y-4">
                             {group.options.map((opt) => (
-                              <div key={opt.id} className="space-y-2">
+                              <div key={opt.id} className="space-y-4">
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">{opt.content}</span>
                                   {opt.isApproved && (
@@ -232,24 +255,36 @@ export default function PublicComparePage() {
                                     />
                                   </div>
                                 )}
-                                <p className="text-sm text-gray-600">{opt.details?.description}</p>
-                                <button
-                                  onClick={() => {
-                                    const storageKey = `show_${opt.id}`
-                                    const storedData = localStorage.getItem(storageKey)
-                                    const data = storedData ? JSON.parse(storedData) : {
-                                      options: [opt],
-                                      operators: [],
-                                      packageNames: { 0: opt.content }
-                                    }
-                                    const encodedData = encodeURIComponent(JSON.stringify(data))
-                                    const link = `${window.location.origin}/public/show/${opt.id}?data=${encodedData}`
-                                    window.open(link, '_blank', 'noopener,noreferrer')
-                                  }}
-                                  className="w-full px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-gray-900 transition-colors"
-                                >
-                                  View Details
-                                </button>
+                                <div className="space-y-4">
+                                  <div>
+                                    <h3 className="font-semibold mb-2">{opt.details?.title}</h3>
+                                    <p className="text-sm text-gray-600">{opt.details?.description}</p>
+                                  </div>
+                                  
+                                  {opt.details?.materials && opt.details.materials.length > 0 && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium">Materials</h4>
+                                      {opt.details.materials.map((material) => (
+                                        <div key={material.id} className="space-y-1">
+                                          <p className="text-sm font-medium">{material.title}</p>
+                                          <p className="text-sm text-gray-600">{material.description}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {opt.details?.sections && opt.details.sections.length > 0 && (
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium">Project Details</h4>
+                                      {opt.details.sections.map((section) => (
+                                        <div key={section.id} className="space-y-1">
+                                          <p className="text-sm font-medium">{section.title}</p>
+                                          <p className="text-sm text-gray-600">{section.content}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ))}
                             <div className="pt-4 border-t">

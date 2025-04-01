@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { ChevronLeft, ChevronRight, Link as LinkIcon, Undo2, Redo2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Undo2, Redo2 } from 'lucide-react'
 import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface EstimateDetailsProps {
@@ -69,19 +69,11 @@ export function EstimateDetails({
     }
   ])
   const [isSliderVisible, setIsSliderVisible] = useState(false)
-  const [shareLink, setShareLink] = useState('')
 
   const [history, setHistory] = useState<HistoryState[]>([{ materials }])
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0)
 
   const monthlyPayment = calculateMonthlyPayment(price, financeSettings.apr, financeSettings.termLength)
-
-  const handleShare = () => {
-    const link = `${window.location.origin}/public/show/${currentOptionId}`
-    setShareLink(link)
-    navigator.clipboard.writeText(link)
-    toast.success('Link copied to clipboard')
-  }
 
   const handleAddSection = () => {
     setSections([
@@ -116,6 +108,52 @@ export function EstimateDetails({
       price,
       afterImage: '/after2.png'
     })
+  }
+
+  const handleSave = () => {
+    // Create the updated option data
+    const updatedOption = {
+      id: currentOptionId,
+      content: materials[0].title,
+      isComplete: true,
+      isApproved: true,
+      details: {
+        title: materials[0].title,
+        description: materials[0].description,
+        price: price,
+        afterImage: '/after2.png',
+        beforeImage: '/before2.png',
+        materials: materials,
+        sections: sections,
+        financeSettings: {
+          apr: financeSettings.apr,
+          termLength: financeSettings.termLength
+        }
+      }
+    }
+
+    // Get existing data from localStorage
+    const storageKey = `show_${currentOptionId}`
+    const storedData = localStorage.getItem(storageKey)
+    const existingData = storedData ? JSON.parse(storedData) : {
+      options: [],
+      operators: [],
+      packageNames: {}
+    }
+
+    // Update the option in the data
+    const updatedOptions = existingData.options.map((opt: any) => 
+      opt.id === currentOptionId ? updatedOption : opt
+    )
+
+    // Save back to localStorage
+    localStorage.setItem(storageKey, JSON.stringify({
+      ...existingData,
+      options: updatedOptions
+    }))
+
+    // Close the dialog
+    handleClose()
   }
 
   const addToHistory = (newMaterials: typeof materials) => {
@@ -319,10 +357,6 @@ export function EstimateDetails({
             <div className="flex items-center justify-between mb-6 flex-shrink-0">
               <h2 className="text-xl font-semibold">Details</h2>
               <div className="flex items-center gap-2">
-                <Button onClick={handleShare}>
-                  Share
-                  <LinkIcon className="w-4 h-4 ml-2" />
-                </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleEditScope}
@@ -330,15 +364,12 @@ export function EstimateDetails({
                 >
                   Edit scope
                 </Button>
-                {shareLink && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.open(shareLink, '_blank')}
-                  >
-                    Open public view
-                  </Button>
-                )}
+                <Button 
+                  onClick={handleSave}
+                  className="min-w-[120px] bg-black text-white hover:bg-black/90"
+                >
+                  Save
+                </Button>
               </div>
             </div>
 
