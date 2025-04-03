@@ -162,7 +162,6 @@ export default function OpportunityPage() {
   const columnsRef = useRef<string>('')
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [selectedMeasurementTypes, setSelectedMeasurementTypes] = useState<string[]>([])
-  const [showJobSelector, setShowJobSelector] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [activeDetailsOptionId, setActiveDetailsOptionId] = useState<number | null>(null)
 

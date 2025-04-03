@@ -111,12 +111,6 @@ export default function PublicShowClient({ id }: PageProps) {
   const selectedOption = showData.options.find(opt => opt.id === selectedOptionId);
   if (!selectedOption) return null;
 
-  const monthlyPayment = calculateMonthlyPayment(
-    selectedOption.details?.price || 0,
-    selectedOption.details?.financeSettings?.apr || 6.99,
-    selectedOption.details?.financeSettings?.termLength || 60
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
