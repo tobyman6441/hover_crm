@@ -17,17 +17,22 @@ interface Option {
     description: string
     price: number
     afterImage: string
-    beforeImage?: string
-    materials?: Array<{
+    beforeImage: string
+    address?: string
+    materials: Array<{
       id: number
       title: string
       description: string
     }>
-    sections?: Array<{
+    sections: Array<{
       id: number
       title: string
       content: string
     }>
+    financeSettings?: {
+      apr: number
+      termLength: number
+    }
   }
 }
 
@@ -57,7 +62,19 @@ export default function PublicComparePage() {
     if (dataParam) {
       try {
         const data: ComparisonData = JSON.parse(decodeURIComponent(dataParam))
-        setOptions(data.options)
+        setOptions(data.options.map(opt => ({
+          ...opt,
+          details: opt.details ? {
+            title: opt.details.title || 'Untitled Option',
+            description: opt.details.description || 'No description available',
+            price: opt.details.price || 0,
+            afterImage: opt.details.afterImage || '',
+            beforeImage: opt.details.beforeImage || '',
+            materials: opt.details.materials || [],
+            sections: opt.details.sections || [],
+            ...(opt.details.financeSettings && { financeSettings: opt.details.financeSettings })
+          } : undefined
+        })))
         setOperators(data.operators)
         setPackageNames(data.packageNames)
       } catch (error) {
@@ -67,13 +84,21 @@ export default function PublicComparePage() {
     setIsLoading(false)
   }, [])
 
+  // Ensure operators array is properly aligned with options
+  const alignedOperators = options.map((_, index) => {
+    if (index < operators.length) {
+      return operators[index]
+    }
+    return { id: index + 1, type: 'and' as const }
+  })
+
   // Group options by "And" relationships
   const andGroups: Option[][] = []
   let currentGroup: Option[] = []
 
   options.forEach((option, index) => {
     currentGroup.push(option)
-    if (index < operators.length && operators[index].type === 'or') {
+    if (index < alignedOperators.length && alignedOperators[index].type === 'or') {
       andGroups.push([...currentGroup])
       currentGroup = []
     }
@@ -150,14 +175,6 @@ export default function PublicComparePage() {
                   <div className="space-y-4">
                     {group.options.map((opt) => (
                       <div key={opt.id} className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{opt.content}</span>
-                          {opt.isApproved && (
-                            <Badge variant="secondary" className="text-[10px] font-normal bg-green-100 text-green-700">
-                              Approved
-                            </Badge>
-                          )}
-                        </div>
                         {opt.details?.afterImage && (
                           <div className="relative aspect-video rounded-lg overflow-hidden">
                             <Image
@@ -170,8 +187,8 @@ export default function PublicComparePage() {
                         )}
                         <div className="space-y-4">
                           <div>
-                            <h3 className="font-semibold mb-2">{opt.details?.title}</h3>
-                            <p className="text-sm text-gray-600">{opt.details?.description}</p>
+                            <h3 className="font-semibold mb-2">{opt.details?.title || opt.content}</h3>
+                            <p className="text-sm text-gray-600">{opt.details?.description || 'No description available'}</p>
                           </div>
                           
                           {opt.details?.materials && opt.details.materials.length > 0 && (
@@ -237,14 +254,6 @@ export default function PublicComparePage() {
                           <div className="space-y-4">
                             {group.options.map((opt) => (
                               <div key={opt.id} className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{opt.content}</span>
-                                  {opt.isApproved && (
-                                    <Badge variant="secondary" className="text-[10px] font-normal bg-green-100 text-green-700">
-                                      Approved
-                                    </Badge>
-                                  )}
-                                </div>
                                 {opt.details?.afterImage && (
                                   <div className="relative aspect-video rounded-lg overflow-hidden">
                                     <Image
@@ -257,8 +266,8 @@ export default function PublicComparePage() {
                                 )}
                                 <div className="space-y-4">
                                   <div>
-                                    <h3 className="font-semibold mb-2">{opt.details?.title}</h3>
-                                    <p className="text-sm text-gray-600">{opt.details?.description}</p>
+                                    <h3 className="font-semibold mb-2">{opt.details?.title || opt.content}</h3>
+                                    <p className="text-sm text-gray-600">{opt.details?.description || 'No description available'}</p>
                                   </div>
                                   
                                   {opt.details?.materials && opt.details.materials.length > 0 && (

@@ -1,499 +1,407 @@
-import { useState } from 'react'
-import Image from 'next/image'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
-import { Button } from "./ui/button"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
-import { ChevronLeft, ChevronRight, Undo2, Redo2 } from 'lucide-react'
-import { calculateMonthlyPayment } from '@/app/utils/calculations'
+"use client";
 
-interface Option {
-  id: number;
-  content: string;
-  isComplete: boolean;
-  isApproved?: boolean;
-  details?: {
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { calculateMonthlyPayment } from "@/app/utils/calculations";
+
+interface EstimateDetailsProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCalculate: () => void;
+  optionDetails?: {
     title: string;
     description: string;
     price: number;
     afterImage: string;
-    beforeImage: string;
-    materials: Array<{
-      id: number;
-      title: string;
-      description: string;
-    }>;
-    sections: Array<{
-      id: number;
-      title: string;
-      content: string;
-    }>;
-    financeSettings?: {
-      apr: number;
-      termLength: number;
-    };
+    materials?: string[];
+    sections?: string[];
+    hasCalculations?: boolean;
+    isApproved?: boolean;
   };
-}
-
-interface EstimateDetailsProps {
-  isOpen: boolean
-  onClose: (details: { title: string; description: string; price: number; afterImage: string }) => void
-  currentOptionId: number
-  totalOptions: number
-  onNavigate: (direction: 'prev' | 'next') => void
-}
-
-interface FinanceSettings {
-  apr: number
-  termLength: number
-}
-
-interface HistoryState {
-  materials: Array<{
-    id: number;
+  onSave: (details: {
     title: string;
     description: string;
-  }>;
+    price: number;
+    afterImage: string;
+    materials?: string[];
+    sections?: string[];
+    hasCalculations?: boolean;
+    isApproved?: boolean;
+  }) => void;
 }
 
-export function EstimateDetails({ 
-  isOpen, 
-  onClose, 
-  currentOptionId,
-  totalOptions,
-  onNavigate
-}: EstimateDetailsProps) {
-  const [materials, setMaterials] = useState([
-    {
-      id: 1,
-      title: "GAF Timberline HDZ",
-      description: "Shingles from GAF. The American Harvest® Collection with Advanced Protection® Shingle Technology will give you the modern architectural style you want, at a price you can afford, with rugged, dependable performance that only a Timberline® roof can offer."
-    },
-    {
-      id: 2,
-      title: "Hardie® Artisan® V Groove Siding",
-      description: "Primed offers the classic charm of tongue-and-groove siding with the lasting durability of James Hardie's proprietary fiber cement. Featuring deep V-groove lines and precise craftsmanship, it delivers a timeless, elegant appearance ready for customization with your choice of paint. This siding is primed and engineered for superior weather resistance and dimensional stability."
+export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, onSave }: EstimateDetailsProps) {
+  const [isCalculated, setIsCalculated] = useState(false);
+  const [price, setPrice] = useState<number>(0);
+  const [displayPrice, setDisplayPrice] = useState<string>('$0.00');
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [editingPrice, setEditingPrice] = useState('');
+  const [apr, setApr] = useState(6.99);
+  const [termLength, setTermLength] = useState(60);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showImageSourceDialog, setShowImageSourceDialog] = useState(false);
+
+  // Update local state when optionDetails changes
+  useEffect(() => {
+    if (optionDetails) {
+      setTitle(optionDetails.title);
+      setDescription(optionDetails.description);
+      setPrice(optionDetails.price);
+      setDisplayPrice(`$${optionDetails.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      setEditingPrice(optionDetails.price.toString());
+      setImages(optionDetails.afterImage ? [optionDetails.afterImage] : []);
+      setCurrentImageIndex(0);
+      // Only set isCalculated if hasCalculations is true
+      setIsCalculated(!!optionDetails.hasCalculations);
+    } else {
+      // Reset all states when there are no optionDetails
+      setTitle("");
+      setDescription("");
+      setPrice(0);
+      setDisplayPrice('$0.00');
+      setEditingPrice('0');
+      setImages([]);
+      setCurrentImageIndex(0);
+      setIsCalculated(false);
     }
-  ])
+  }, [optionDetails]);
 
-  const [price, setPrice] = useState(156799)
-  const [isEditingPrice, setIsEditingPrice] = useState(false)
-  const [showFinanceSettings, setShowFinanceSettings] = useState(false)
-  const [financeSettings, setFinanceSettings] = useState<FinanceSettings>({
-    apr: 6.99,
-    termLength: 60
-  })
-  const [sections, setSections] = useState([
-    {
-      id: 1,
-      title: 'Dump Trailer, Protection and Safety',
-      content: 'These systems protect the house area, driveway, pool, etc. and are put in place prior to tearing off the existing roofing system. Additionally, crews set up safety precautions by installing butterfly clips that they can attach safety harnesses to.'
-    },
-    {
-      id: 2,
-      title: 'Installation',
-      content: 'Professional installation following manufacturer guidelines and local building codes.'
-    }
-  ])
-  const [isSliderVisible, setIsSliderVisible] = useState(false)
-
-  const [history, setHistory] = useState<HistoryState[]>([{ materials }])
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0)
-
-  const monthlyPayment = calculateMonthlyPayment(price, financeSettings.apr, financeSettings.termLength)
-
-  const handleAddSection = () => {
-    setSections([
-      ...sections,
-      {
-        id: sections.length + 1,
-        title: 'New Section',
-        content: 'Click to edit content'
+  // Reset state when dialog is closed
+  useEffect(() => {
+    if (!isOpen) {
+      if (optionDetails) {
+        setTitle(optionDetails.title);
+        setDescription(optionDetails.description);
+        setPrice(optionDetails.price);
+        setDisplayPrice(`$${optionDetails.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        setEditingPrice(optionDetails.price.toString());
+        setImages(optionDetails.afterImage ? [optionDetails.afterImage] : []);
+        setCurrentImageIndex(0);
+        // Only set isCalculated if hasCalculations is true
+        setIsCalculated(!!optionDetails.hasCalculations);
+      } else {
+        setTitle("");
+        setDescription("");
+        setPrice(0);
+        setDisplayPrice('$0.00');
+        setEditingPrice('0');
+        setImages([]);
+        setCurrentImageIndex(0);
+        setIsCalculated(false);
       }
-    ])
-  }
+      setIsEditingPrice(false);
+    }
+  }, [isOpen, optionDetails]);
 
-  const handleRemoveSection = (sectionId: number) => {
-    setSections(sections.filter(section => section.id !== sectionId))
-  }
+  const monthlyPayment = calculateMonthlyPayment(price, apr, termLength);
 
-  const handleEditScope = () => {
-    window.open('https://hover.to/ehi/#/project_estimator/questions/facets/select_roof_facets?jobId=15273950&productionListId=465247&recalculate=true&templateIds=1254707,1247492', '_blank', 'noopener,noreferrer')
-  }
+  const handleCalculate = () => {
+    // Set isCalculated to true only when Calculate button is clicked
+    setIsCalculated(true);
+    onCalculate();
+  };
 
-  const handleFinanceSettingsChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof FinanceSettings) => {
-    setFinanceSettings({
-      ...financeSettings,
-      [field]: Number(e.target.value)
-    })
-  }
-
-  const handleClose = () => {
-    onClose({
-      title: materials[0].title,
-      description: materials[0].description,
-      price,
-      afterImage: '/after2.png'
-    })
-  }
+  const handleImageSourceSelect = (source: string) => {
+    if (source === "upload") {
+      // Handle file upload
+    } else if (source === "design") {
+      // Open design ideas link in new tab
+      window.open('https://hover.to/wr/properties/design', '_blank');
+      
+      // Add design idea images to carousel
+      const designImages = [
+        "/design-idea1.jpg",
+        "/design-idea2.jpg",
+        "/design-idea3.jpg",
+        "/design-idea4.jpg"
+      ];
+      
+      // Keep existing images if any, and add design ideas
+      setImages(prevImages => {
+        const uniqueImages = new Set([...prevImages, ...designImages]);
+        return Array.from(uniqueImages);
+      });
+      
+      setShowImageSourceDialog(false);
+    } else {
+      // Show job selector
+      setShowImageSourceDialog(false);
+    }
+  };
 
   const handleSave = () => {
-    // Create the updated option data
-    const updatedOption = {
-      id: currentOptionId,
-      content: materials[0].title,
-      isComplete: true,
-      isApproved: true,
-      details: {
-        title: materials[0].title,
-        description: materials[0].description,
-        price: price,
-        afterImage: '/after2.png',
-        beforeImage: '/before2.png',
-        materials: materials,
-        sections: sections,
-        financeSettings: {
-          apr: financeSettings.apr,
-          termLength: financeSettings.termLength
-        }
-      }
+    onSave({
+      title,
+      description,
+      price,
+      afterImage: images[0] || "",
+      materials: optionDetails?.materials || [],
+      sections: optionDetails?.sections || [],
+      // Pass the current calculation state
+      hasCalculations: isCalculated,
+      isApproved: optionDetails?.isApproved || false
+    });
+    onClose();
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // If the value starts with $, remove it
+    const rawValue = value.startsWith('$') ? value.slice(1) : value;
+    
+    // Allow any numeric input including decimals
+    setEditingPrice(rawValue);
+    
+    // Try to parse the number, removing any commas
+    const numericValue = parseFloat(rawValue.replace(/,/g, ''));
+    if (!isNaN(numericValue)) {
+      setPrice(numericValue);
+      setDisplayPrice(`$${numericValue.toLocaleString('en-US', { 
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+      })}`);
     }
+  };
 
-    // Get existing data from localStorage
-    const storageKey = `show_${currentOptionId}`
-    const storedData = localStorage.getItem(storageKey)
-    const existingData = storedData ? JSON.parse(storedData) : {
-      options: [],
-      operators: [],
-      packageNames: {}
-    }
+  const handlePriceBlur = () => {
+    setIsEditingPrice(false);
+    // Format the price for display
+    const formattedValue = `$${price.toLocaleString('en-US', { 
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2 
+    })}`;
+    setDisplayPrice(formattedValue);
+  };
 
-    // Update the option in the data
-    const updatedOptions = existingData.options.map((opt: Option) => 
-      opt.id === currentOptionId ? updatedOption : opt
-    )
-
-    // Save back to localStorage
-    localStorage.setItem(storageKey, JSON.stringify({
-      ...existingData,
-      options: updatedOptions
-    }))
-
-    // Close the dialog
-    handleClose()
-  }
-
-  const addToHistory = (newMaterials: typeof materials) => {
-    const newHistory = history.slice(0, currentHistoryIndex + 1)
-    newHistory.push({ materials: newMaterials })
-    setHistory(newHistory)
-    setCurrentHistoryIndex(newHistory.length - 1)
-  }
-
-  const handleUndo = () => {
-    if (currentHistoryIndex > 0) {
-      setCurrentHistoryIndex(currentHistoryIndex - 1)
-      setMaterials(history[currentHistoryIndex - 1].materials)
-    }
-  }
-
-  const handleRedo = () => {
-    if (currentHistoryIndex < history.length - 1) {
-      setCurrentHistoryIndex(currentHistoryIndex + 1)
-      setMaterials(history[currentHistoryIndex + 1].materials)
-    }
-  }
-
-  const handleDeleteMaterial = (id: number) => {
-    const newMaterials = materials.filter(material => material.id !== id)
-    setMaterials(newMaterials)
-    addToHistory(newMaterials)
-  }
-
-  const handleUpdateMaterial = (id: number, field: 'title' | 'description', value: string) => {
-    const newMaterials = materials.map(material => 
-      material.id === id ? { ...material, [field]: value } : material
-    )
-    setMaterials(newMaterials)
-    addToHistory(newMaterials)
-  }
+  const handlePriceFocus = () => {
+    setIsEditingPrice(true);
+    // Show the raw number for editing, without commas
+    setEditingPrice(price.toString());
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-6">
-        <DialogHeader>
-          <DialogTitle className="sr-only">Estimate Details</DialogTitle>
-        </DialogHeader>
-        <div className="flex h-full gap-8">
-          {/* Left side - Images and main content */}
-          <div className="flex-1 overflow-y-auto pr-6">
-            <div className="relative flex flex-col h-full">
-              <div className="relative">
-                <div className="relative h-[400px] mb-2">
-                  <Image
-                    src="/before2.png"
-                    alt="Before"
-                    className={`absolute inset-0 object-cover transition-opacity duration-300 ${
-                      isSliderVisible ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    fill
-                  />
-                  <Image
-                    src="/after2.png"
-                    alt="After"
-                    className={`absolute inset-0 object-cover transition-opacity duration-300 ${
-                      isSliderVisible ? 'opacity-0' : 'opacity-100'
-                    }`}
-                    fill
-                  />
-                </div>
-
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <button
-                    onClick={() => setIsSliderVisible(true)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                      isSliderVisible 
-                        ? 'bg-black text-white' 
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    Before
-                  </button>
-                  <a
-                    href="https://hover.to/designer/share/d8fdc294-020d-4566-8df3-7987ed51b3ee"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-1.5 text-sm font-medium rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors"
-                  >
-                    Design ideas
-                  </a>
-                  <a
-                    href="https://hover.to/design-studio/15273950/model/15271361"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-1.5 text-sm font-medium rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors"
-                  >
-                    Edit design & materials
-                  </a>
-                  <button
-                    onClick={() => setIsSliderVisible(false)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                      !isSliderVisible 
-                        ? 'bg-black text-white' 
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    After
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleUndo}
-                      disabled={currentHistoryIndex === 0}
-                      className="h-8 w-8"
-                    >
-                      <Undo2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRedo}
-                      disabled={currentHistoryIndex === history.length - 1}
-                      className="h-8 w-8"
-                    >
-                      <Redo2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className={`grid ${materials.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-6`}>
-                  {materials.map((material) => (
-                    <div key={material.id} className={`space-y-2 group relative ${materials.length === 1 ? 'max-w-2xl mx-auto w-full' : ''}`}>
-                      <button
-                        onClick={() => handleDeleteMaterial(material.id)}
-                        className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full z-10"
-                      >
-                        <svg className="w-4 h-4 text-gray-500 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                      <input
-                        type="text"
-                        value={material.title}
-                        onChange={(e) => handleUpdateMaterial(material.id, 'title', e.target.value)}
-                        className={`text-xl font-bold w-full bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2 ${materials.length === 1 ? 'text-center' : ''}`}
-                      />
-                      <textarea
-                        value={material.description}
-                        onChange={(e) => handleUpdateMaterial(material.id, 'description', e.target.value)}
-                        className={`w-full h-[120px] bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2 resize-none text-sm ${materials.length === 1 ? 'text-center' : ''}`}
-                      />
-                    </div>
-                  ))}
-                </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-6">
+        <DialogTitle className="sr-only">Estimate Details</DialogTitle>
+        <div className="flex flex-col h-full space-y-6">
+          {/* Top Action Button */}
+          <div className="flex justify-between items-center">
+            {!isCalculated ? (
+              <Button
+                onClick={handleCalculate}
+                className="bg-black text-white hover:bg-black/90"
+              >
+                Calculate costs & pricing
+              </Button>
+            ) : (
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('https://hover.to/ehi/#/project/15273950/scope?orgId=823697&productionListId=465247', '_blank')}
+                >
+                  View calculations
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('https://hover.to/design-studio/15273950/model/15271361', '_blank')}
+                >
+                  Edit Scope
+                </Button>
               </div>
+            )}
+          </div>
 
-              {/* Price and Edit Scope section */}
-              <div className="fixed bottom-0 left-0 right-[450px] bg-white z-10">
-                <div className="px-2 py-4">
-                  <div className="flex items-center justify-between max-w-[95%] mx-auto">
-                    <div className="flex items-center gap-8">
-                      <div className="text-2xl font-bold">
-                        {isEditingPrice ? (
-                          <input
-                            type="number"
-                            value={price}
-                            onChange={(e) => setPrice(Number(e.target.value))}
-                            onBlur={() => setIsEditingPrice(false)}
-                            className="w-32 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2"
-                            autoFocus
-                          />
-                        ) : (
-                          <span onClick={() => setIsEditingPrice(true)} className="cursor-pointer hover:opacity-80 transition-opacity">
-                            ${price.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                      <div 
-                        className="text-sm text-gray-600 cursor-pointer hover:text-gray-900 transition-colors"
-                        onClick={() => setShowFinanceSettings(true)}
+          {/* Image Section */}
+          <div className="space-y-4">
+            <div className="relative">
+              {images.length > 0 ? (
+                <div className="relative aspect-video rounded-lg overflow-hidden">
+                  <Image
+                    src={images[currentImageIndex]}
+                    alt="Project image"
+                    fill
+                    className="object-cover"
+                  />
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={handlePrevImage}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
                       >
-                        As low as ${monthlyPayment}/mo
-                      </div>
+                        ←
+                      </button>
+                      <button
+                        onClick={handleNextImage}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
+                      >
+                        →
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => setShowImageSourceDialog(true)}
+                    className="absolute bottom-2 right-2 px-3 py-1.5 rounded-full text-xs font-medium bg-black/50 text-white hover:bg-black/60 transition-colors flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add images
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => setShowImageSourceDialog(true)}
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                >
+                  <div className="space-y-2">
+                    <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
                     </div>
-                    <a
-                      href="https://hover.to/ehi/#/project/15273950/scope?orgId=823697&productionListId=465247"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                      View calculations →
-                    </a>
+                    <div className="text-sm font-medium text-gray-900">Add images</div>
+                    <div className="text-sm text-gray-500">Click to select image source</div>
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Price Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-8">
+              <div className="space-y-2">
+                <Label>Total Price</Label>
+                <Input
+                  type="text"
+                  value={isEditingPrice ? editingPrice : displayPrice}
+                  onChange={handlePriceChange}
+                  onFocus={handlePriceFocus}
+                  onBlur={handlePriceBlur}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label>As low as ${monthlyPayment.toLocaleString('en-US', { maximumFractionDigits: 0 })}/month</Label>
+                  <button
+                    onClick={() => {/* Show financing settings */}}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    (Edit)
+                  </button>
+                </div>
+                <div className="flex gap-4">
+                  <Input
+                    type="number"
+                    value={apr}
+                    onChange={(e) => setApr(Number(e.target.value))}
+                    placeholder="APR %"
+                    className="w-24"
+                  />
+                  <Input
+                    type="number"
+                    value={termLength}
+                    onChange={(e) => setTermLength(Number(e.target.value))}
+                    placeholder="Term length"
+                    className="w-24"
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right side - Details */}
-          <div className="w-[450px] flex-shrink-0 border-l pl-6 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
-              <h2 className="text-xl font-semibold">Details</h2>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleEditScope}
-                  className="min-w-[120px]"
-                >
-                  Edit scope
-                </Button>
-                <Button 
-                  onClick={handleSave}
-                  className="min-w-[120px] bg-black text-white hover:bg-black/90"
-                >
-                  Save
-                </Button>
-              </div>
+          {/* Header Section */}
+          <div className="space-y-2">
+            <div className="relative group">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Option name"
+                className="text-2xl font-bold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0"
+              />
+              <div className="absolute -bottom-1 left-0 right-0 h-px bg-gray-200 group-hover:bg-gray-300 transition-colors" />
+              <p className="absolute -bottom-6 left-0 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                Click to edit the header
+              </p>
             </div>
+          </div>
 
-            <div className="overflow-y-auto flex-1 pr-6">
-              <div className="space-y-6 mb-8">
-                {sections.map((section, index) => (
-                  <div key={section.id} className="space-y-2 relative group">
-                    <button
-                      onClick={() => handleRemoveSection(section.id)}
-                      className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-full"
-                    >
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                    <input
-                      type="text"
-                      value={section.title}
-                      onChange={(e) => {
-                        const newSections = [...sections]
-                        newSections[index].title = e.target.value
-                        setSections(newSections)
-                      }}
-                      className="font-semibold w-full bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2"
-                    />
-                    <textarea
-                      value={section.content}
-                      onChange={(e) => {
-                        const newSections = [...sections]
-                        newSections[index].content = e.target.value
-                        setSections(newSections)
-                      }}
-                      className="w-full min-h-[100px] bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-gray-200 rounded px-2 resize-none"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full mb-8"
-                onClick={handleAddSection}
-              >
-                Add section
-              </Button>
+          {/* Description Section */}
+          <div className="space-y-2">
+            <div className="relative group">
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Option description"
+                className="min-h-[100px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0 resize-none"
+              />
+              <div className="absolute -bottom-1 left-0 right-0 h-px bg-gray-200 group-hover:bg-gray-300 transition-colors" />
+              <p className="absolute -bottom-6 left-0 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                Click to edit the description
+              </p>
             </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="mt-auto pt-6">
+            <Button
+              onClick={handleSave}
+              className="w-full bg-black text-white hover:bg-black/90"
+            >
+              Save
+            </Button>
           </div>
         </div>
 
-        {/* Navigation arrows */}
-        {currentOptionId > 1 && (
-          <button
-            onClick={() => onNavigate('prev')}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-        )}
-        {currentOptionId < totalOptions && (
-          <button
-            onClick={() => onNavigate('next')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        )}
+        {/* Image Source Dialog */}
+        <Dialog open={showImageSourceDialog} onOpenChange={setShowImageSourceDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogTitle className="sr-only">Select Image Source</DialogTitle>
+            <div className="grid gap-4">
+              <Button variant="outline" onClick={() => handleImageSourceSelect("upload")}>
+                Upload images
+              </Button>
+              <Button variant="outline" onClick={() => handleImageSourceSelect("design")}>
+                Select from design ideas
+              </Button>
+              <Button variant="outline" onClick={() => handleImageSourceSelect("inspection")}>
+                Select from inspection
+              </Button>
+              <Button variant="outline" onClick={() => handleImageSourceSelect("job")}>
+                Select from job photos
+              </Button>
+              <Button variant="outline" onClick={() => handleImageSourceSelect("3d")}>
+                Select from Saved 3D designs
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
-
-      {/* Finance Settings Dialog */}
-      <Dialog open={showFinanceSettings} onOpenChange={setShowFinanceSettings}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Financing Settings</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="apr">APR (%)</Label>
-              <Input
-                id="apr"
-                type="number"
-                step="0.01"
-                value={financeSettings.apr}
-                onChange={(e) => handleFinanceSettingsChange(e, 'apr')}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="term">Term Length (months)</Label>
-              <Input
-                id="term"
-                type="number"
-                value={financeSettings.termLength}
-                onChange={(e) => handleFinanceSettingsChange(e, 'termLength')}
-              />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Dialog>
-  )
+  );
 } 

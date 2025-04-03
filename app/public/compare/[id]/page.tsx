@@ -17,6 +17,16 @@ interface Option {
     description: string
     price: number
     afterImage: string
+    materials?: {
+      id: number
+      title: string
+      description: string
+    }[]
+    sections?: {
+      id: number
+      title: string
+      content: string
+    }[]
   }
 }
 
@@ -36,38 +46,110 @@ export default function PublicComparePage() {
     const mockOptions: Option[] = [
       {
         id: 1,
-        content: "Kitchen Remodel",
+        content: "Basic Package",
         isComplete: true,
         isApproved: true,
         details: {
-          title: "Kitchen Remodel",
-          description: "Complete kitchen renovation with new cabinets, countertops, and appliances",
-          price: 45000,
-          afterImage: "https://images.unsplash.com/photo-1556911220-bff31c812dba?q=80&w=1000&auto=format&fit=crop"
+          title: "Basic Package",
+          description: "Essential home improvements including basic repairs, painting, and minor upgrades",
+          price: 15000,
+          afterImage: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop",
+          materials: [
+            {
+              id: 1,
+              title: "Standard Paint",
+              description: "High-quality interior paint for walls and ceilings"
+            },
+            {
+              id: 2,
+              title: "Basic Fixtures",
+              description: "Standard lighting fixtures and hardware"
+            }
+          ],
+          sections: [
+            {
+              id: 1,
+              title: "Scope of Work",
+              content: "Includes basic repairs, interior painting, and standard fixture installation"
+            },
+            {
+              id: 2,
+              title: "Timeline",
+              content: "Estimated completion time: 2-3 weeks"
+            }
+          ]
         }
       },
       {
         id: 2,
-        content: "Bathroom Remodel",
+        content: "Premium Package",
         isComplete: true,
         isApproved: true,
         details: {
-          title: "Bathroom Remodel",
-          description: "Full bathroom renovation with new fixtures, tile, and vanity",
-          price: 25000,
-          afterImage: "https://images.unsplash.com/photo-1552321554-5fefe8c9efad?q=80&w=1000&auto=format&fit=crop"
+          title: "Premium Package",
+          description: "Comprehensive home renovation with high-end materials and custom finishes",
+          price: 35000,
+          afterImage: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1000&auto=format&fit=crop",
+          materials: [
+            {
+              id: 1,
+              title: "Premium Paint",
+              description: "Luxury-grade interior and exterior paint with extended warranty"
+            },
+            {
+              id: 2,
+              title: "Custom Fixtures",
+              description: "Designer lighting fixtures and custom hardware"
+            }
+          ],
+          sections: [
+            {
+              id: 1,
+              title: "Scope of Work",
+              content: "Includes full renovation, custom finishes, and premium material installation"
+            },
+            {
+              id: 2,
+              title: "Timeline",
+              content: "Estimated completion time: 4-6 weeks"
+            }
+          ]
         }
       },
       {
         id: 3,
-        content: "Living Room Update",
+        content: "Luxury Package",
         isComplete: true,
         isApproved: false,
         details: {
-          title: "Living Room Update",
-          description: "Living room refresh with new flooring, paint, and lighting",
-          price: 15000,
-          afterImage: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1000&auto=format&fit=crop"
+          title: "Luxury Package",
+          description: "Ultimate home transformation with luxury materials and bespoke design elements",
+          price: 65000,
+          afterImage: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=1000&auto=format&fit=crop",
+          materials: [
+            {
+              id: 1,
+              title: "Luxury Paint",
+              description: "Premium designer paint with custom color matching"
+            },
+            {
+              id: 2,
+              title: "High-End Fixtures",
+              description: "Luxury designer fixtures and custom hardware"
+            }
+          ],
+          sections: [
+            {
+              id: 1,
+              title: "Scope of Work",
+              content: "Includes complete home transformation, luxury finishes, and custom design elements"
+            },
+            {
+              id: 2,
+              title: "Timeline",
+              content: "Estimated completion time: 6-8 weeks"
+            }
+          ]
         }
       }
     ]

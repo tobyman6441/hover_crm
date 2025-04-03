@@ -29,26 +29,31 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { defaultColumns } from '@/app/config/columns'
-import { EstimateDetails } from '@/app/components/EstimateDetails'
 import { PriceSummary } from '@/app/components/PriceSummary'
 import { calculateMonthlyPayment } from '@/app/utils/calculations'
+import { EstimateDetails } from '@/app/components/EstimateDetails'
 
-interface Option {
-  id: number
-  content: string
-  isComplete: boolean
-  isApproved?: boolean
+type Option = {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  afterImage: string;
+  materials: string[];
+  sections: string[];
+  hasCalculations: boolean;
+  isApproved: boolean;
+  content: string;
+  isComplete: boolean;
   details?: {
-    title: string
-    description: string
-    price: number
-    afterImage: string
-    address?: string
-    materials?: string[]
-    sections?: string[]
-    beforeImage?: string
-  }
-}
+    title: string;
+    description: string;
+    price: number;
+    afterImage: string;
+    materials: string[];
+    sections: string[];
+  };
+};
 
 interface Operator {
   id: number
@@ -155,10 +160,11 @@ export default function OpportunityPage() {
   const [history, setHistory] = useState<HistoryState[]>([])
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1)
   const columnsRef = useRef<string>('')
-  const [showDetails, setShowDetails] = useState(false)
-  const [activeDetailsOptionId, setActiveDetailsOptionId] = useState<number | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [selectedMeasurementTypes, setSelectedMeasurementTypes] = useState<string[]>([])
+  const [showJobSelector, setShowJobSelector] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [activeDetailsOptionId, setActiveDetailsOptionId] = useState<number | null>(null)
 
   // Load columns from localStorage
   useEffect(() => {
@@ -215,8 +221,20 @@ export default function OpportunityPage() {
       setHistory([{ options: existingOpportunity.options || [], operators: existingOpportunity.operators || [] }])
       setCurrentHistoryIndex(0)
     } else {
-      // Initialize new opportunity with an empty option and default column
-      const initialOptions = [{ id: 1, content: '+ Option 1', isComplete: false }]
+      // Initialize new options with all required fields
+      const initialOptions: Option[] = [{
+        id: 1,
+        title: '+ Option 1',
+        description: '',
+        price: 0,
+        afterImage: '',
+        hasCalculations: false,
+        isApproved: false,
+        content: '+ Option 1',
+        isComplete: false,
+        materials: [],
+        sections: []
+      }];
       setOptions(initialOptions)
       const defaultColumn = columns[0]?.id || 'drafts'
       setCurrentColumn(defaultColumn)
@@ -282,51 +300,65 @@ export default function OpportunityPage() {
   }
 
   const handleAddOption = () => {
-    const newOption = {
+    const defaultTitle = "New option";
+    const newOption: Option = {
       id: options.length + 1,
-      content: "New option",
-      isComplete: false
-    }
-    const newOperator = {
-      id: operators.length + 1,
-      type: 'and' as const
-    }
-    const updatedOptions = [...options, newOption]
-    const updatedOperators = [...operators, newOperator]
-    setOptions(updatedOptions)
-    setOperators(updatedOperators)
-    saveToHistory(updatedOptions, updatedOperators)
+      title: defaultTitle,
+      description: '',
+      price: 0,
+      afterImage: '',
+      hasCalculations: false,
+      isApproved: false,
+      content: defaultTitle,
+      isComplete: false,
+      materials: [],
+      sections: []
+    };
     
-    // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
-    
-    if (existingIndex >= 0) {
-      opportunities[existingIndex] = {
-        ...opportunities[existingIndex],
-        options: updatedOptions,
-        operators: updatedOperators,
-        lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    // Add new option
+    const newOptions = [...options, newOption];
+    setOptions(newOptions);
+
+    // Add new operator if there was already at least one option
+    if (options.length > 0) {
+      // Create new operator at the correct index (options.length - 1)
+      const newOperator = {
+        id: operators.length + 1,
+        type: 'and' as const
+      };
+      const newOperators = [...operators];
+      newOperators[options.length - 1] = newOperator;
+      setOperators(newOperators);
+      
+      // Save both options and operators to history
+      saveToHistory(newOptions, newOperators);
     }
-    
-    toast.success('Auto saved')
-  }
+  };
 
   const handleDeleteOption = (optionId: number) => {
-    const optionIndex = options.findIndex(opt => opt.id === optionId)
-    const updatedOptions = options.filter(opt => opt.id !== optionId)
-    const updatedOperators = operators.filter((_, index) => index !== optionIndex)
-    setOptions(updatedOptions)
-    setOperators(updatedOperators)
-    saveToHistory(updatedOptions, updatedOperators)
+    const optionIndex = options.findIndex(opt => opt.id === optionId);
+    
+    // Remove the option
+    const updatedOptions = options.filter(opt => opt.id !== optionId);
+    
+    // Remove the operator at the same index, or the previous operator if it's the last option
+    let updatedOperators = [...operators];
+    if (optionIndex === options.length - 1 && operators.length > 0) {
+      // If deleting the last option, remove the last operator
+      updatedOperators = operators.slice(0, -1);
+    } else {
+      // Otherwise remove the operator at the same index
+      updatedOperators = operators.filter((_, index) => index !== optionIndex);
+    }
+    
+    setOptions(updatedOptions);
+    setOperators(updatedOperators);
+    saveToHistory(updatedOptions, updatedOperators);
     
     // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
+    const opportunityId = window.location.pathname.split('/').pop();
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
@@ -334,89 +366,44 @@ export default function OpportunityPage() {
         options: updatedOptions,
         operators: updatedOperators,
         lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+      };
+      localStorage.setItem('opportunities', JSON.stringify(opportunities));
     }
     
-    toast.success('Auto saved')
-  }
+    toast.success('Auto saved');
+  };
 
-  const handleDuplicateOption = (optionId: number) => {
-    const optionToDuplicate = options.find(opt => opt.id === optionId)
-    if (!optionToDuplicate) return
-
+  const handleDuplicateOption = (optionToDuplicate: Option) => {
     const newOption = {
-      id: Math.max(...options.map(opt => opt.id)) + 1,
-      content: optionToDuplicate.content,
-      isComplete: optionToDuplicate.isComplete,
-      isApproved: optionToDuplicate.isApproved,
-      details: optionToDuplicate.details ? { ...optionToDuplicate.details } : undefined
-    }
-    
-    const optionIndex = options.findIndex(opt => opt.id === optionId)
-    
-    const updatedOptions = [
-      ...options.slice(0, optionIndex + 1),
-      newOption,
-      ...options.slice(optionIndex + 1)
-    ]
-    
-    const newOperator = {
-      id: Math.max(...operators.map(op => op.id)) + 1,
-      type: 'and' as const
-    }
-    
-    const updatedOperators = [
-      ...operators.slice(0, optionIndex + 1),
-      newOperator,
-      ...operators.slice(optionIndex + 1)
-    ]
-    
-    setOptions(updatedOptions)
-    setOperators(updatedOperators)
-    saveToHistory(updatedOptions, updatedOperators)
-    
-    // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
-    
-    if (existingIndex >= 0) {
-      opportunities[existingIndex] = {
-        ...opportunities[existingIndex],
-        options: updatedOptions,
-        operators: updatedOperators,
-        lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('opportunities', JSON.stringify(opportunities))
-    }
-    
-    toast.success('Option duplicated')
-  }
+      ...optionToDuplicate,
+      id: Math.max(...options.map(opt => opt.id)) + 1
+    };
+    setOptions([...options, newOption]);
+  };
 
   const handleOperatorChange = (operatorId: number, newType: 'and' | 'or') => {
     const updatedOperators = operators.map(op => 
       op.id === operatorId ? { ...op, type: newType } : op
-    )
-    setOperators(updatedOperators)
-    saveToHistory(options, updatedOperators)
+    );
+    setOperators(updatedOperators);
+    saveToHistory(options, updatedOperators);
     
     // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
+    const opportunityId = window.location.pathname.split('/').pop();
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
         ...opportunities[existingIndex],
         operators: updatedOperators,
         lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+      };
+      localStorage.setItem('opportunities', JSON.stringify(opportunities));
     }
     
-    toast.success('Auto saved')
-  }
+    toast.success('Auto saved');
+  };
 
   const handleOptionClick = (optionId: number) => {
     setActiveOptionId(optionId)
@@ -438,37 +425,58 @@ export default function OpportunityPage() {
     })
   }
 
+  const handleCalculate = (optionId: number) => {
+    setActiveDetailsOptionId(optionId);
+    setIsJobSelectorOpen(true);
+  };
+
   const handleCreateEstimate = () => {
-    if (activeOptionId && selectedJobs.length === 1) {
-      const updatedOptions = options.map(opt => 
-        opt.id === activeOptionId 
-          ? { ...opt, content: selectedJobs[0].name, isComplete: true }
-          : opt
-      )
-      setOptions(updatedOptions)
-      setIsJobSelectorOpen(false)
-      setSearchQuery('')
-      setActiveOptionId(null)
-      setSelectedJobs([])
-      
-      // Save to localStorage immediately
-      const opportunityId = window.location.pathname.split('/').pop()
-      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
-      
-      if (existingIndex >= 0) {
-        opportunities[existingIndex] = {
-          ...opportunities[existingIndex],
-          options: updatedOptions,
-          operators: operators,
-          lastUpdated: new Date().toISOString()
-        }
-        localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    // Open design studio in new tab
+    window.open('https://hover.to/design-studio/15273950/model/15271361', '_blank');
+    
+    // Close job selector
+    setIsJobSelectorOpen(false);
+    
+    // Update option with pre-populated info
+    const updatedOptions = options.map(opt => {
+      if (opt.id === activeDetailsOptionId) {
+        const title = 'GAF Timberline HDZ roof and Hardie® Artisan® V Groove Siding';
+        return {
+          ...opt,
+          title,
+          description: `Shingles from GAF. The American Harvest® Collection with Advanced Protection® Shingle Technology will give you the modern architectural style you want, at a price you can afford, with rugged, dependable performance that only a Timberline® roof can offer.
+
+Primed offers the classic charm of tongue-and-groove siding with the lasting durability of James Hardie's proprietary fiber cement. Featuring deep V-groove lines and precise craftsmanship, it delivers a timeless, elegant appearance ready for customization with your choice of paint. This siding is primed and engineered for superior weather resistance and dimensional stability.`,
+          price: 156799,
+          afterImage: "/after2.png",
+          materials: [],
+          sections: [],
+          hasCalculations: false,
+          isApproved: false,
+          content: title // Ensure content matches title
+        };
       }
-      
-      toast.success('Auto saved')
+      return opt;
+    });
+    setOptions(updatedOptions);
+
+    // Save to localStorage
+    const opportunityId = window.location.pathname.split('/').pop();
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = {
+        ...opportunities[existingIndex],
+        options: updatedOptions,
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('opportunities', JSON.stringify(opportunities));
     }
-  }
+    
+    // Show estimate details with pre-populated info
+    setShowDetails(true);
+  };
 
   const handleFeedback = () => {
     toast.success('Thank you for your feedback')
@@ -600,7 +608,7 @@ export default function OpportunityPage() {
   }
 
   const handleBackClick = () => {
-    const completedOptions = options.filter(opt => opt.isComplete)
+    const completedOptions = options.filter(opt => opt.hasCalculations)
     const opportunityData: Opportunity = {
       id: window.location.pathname.split('/').pop() || '',
       title,
@@ -627,70 +635,34 @@ export default function OpportunityPage() {
   const handleToggleApproval = (optionId: number) => {
     const updatedOptions = options.map(opt => 
       opt.id === optionId ? { ...opt, isApproved: !opt.isApproved } : opt
-    )
-    setOptions(updatedOptions)
+    );
+    setOptions(updatedOptions);
     
     // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
+    const opportunityId = window.location.pathname.split('/').pop();
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
     
     if (existingIndex >= 0) {
       opportunities[existingIndex] = {
         ...opportunities[existingIndex],
         options: updatedOptions,
         lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('opportunities', JSON.stringify(opportunities))
+      };
+      localStorage.setItem('opportunities', JSON.stringify(opportunities));
     }
     
-    toast.success('Auto saved')
-  }
-
-  const handleShowDetails = (optionId: number) => {
-    setActiveDetailsOptionId(optionId)
-    setShowDetails(true)
-  }
-
-  const handleDetailsClose = (optionId: number, details: { title: string; description: string; price: number; afterImage: string }) => {
-    setShowDetails(false)
-    const selectedJob = jobs.find(job => job.name === options.find(opt => opt.id === optionId)?.content)
-    const updatedOptions = options.map(opt => 
-      opt.id === optionId ? { 
-        ...opt, 
-        details: {
-          ...details,
-          address: selectedJob?.address
-        }
-      } : opt
-    )
-    setOptions(updatedOptions)
-    
-    // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop()
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
-    
-    if (existingIndex >= 0) {
-      opportunities[existingIndex] = {
-        ...opportunities[existingIndex],
-        options: updatedOptions,
-        lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('opportunities', JSON.stringify(opportunities))
-    }
-    
-    toast.success('Auto saved')
-  }
+    toast.success('Auto saved');
+  };
 
   const handleNavigateDetails = (direction: 'prev' | 'next') => {
-    if (!activeDetailsOptionId) return
+    if (!activeOptionId) return
 
-    const currentIndex = options.findIndex(opt => opt.id === activeDetailsOptionId)
+    const currentIndex = options.findIndex(opt => opt.id === activeOptionId)
     if (direction === 'prev' && currentIndex > 0) {
-      setActiveDetailsOptionId(options[currentIndex - 1].id)
+      setActiveOptionId(options[currentIndex - 1].id)
     } else if (direction === 'next' && currentIndex < options.length - 1) {
-      setActiveDetailsOptionId(options[currentIndex + 1].id)
+      setActiveOptionId(options[currentIndex + 1].id)
     }
   }
 
@@ -706,6 +678,96 @@ export default function OpportunityPage() {
     
     localStorage.setItem('opportunities', JSON.stringify(opportunities))
   }
+
+  const handleShowDetails = (optionId: number) => {
+    setActiveDetailsOptionId(optionId)
+    setShowDetails(true)
+    
+    // Initialize blank details if none exist
+    const option = options.find(opt => opt.id === optionId)
+    if (option && !option.hasCalculations) {
+      const updatedOptions = options.map(opt => 
+        opt.id === optionId ? { 
+          ...opt, 
+          hasCalculations: false,
+          title: opt.content || "", // Initialize title from content if it exists
+          description: "",
+          price: 0,
+          afterImage: "",
+          materials: [],
+          sections: [],
+          content: opt.content || "" // Keep existing content or use empty string
+        } : opt
+      )
+      setOptions(updatedOptions)
+      
+      // Save to localStorage immediately
+      const opportunityId = window.location.pathname.split('/').pop()
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
+      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
+      
+      if (existingIndex >= 0) {
+        opportunities[existingIndex] = {
+          ...opportunities[existingIndex],
+          options: updatedOptions,
+          lastUpdated: new Date().toISOString()
+        }
+        localStorage.setItem('opportunities', JSON.stringify(opportunities))
+      }
+    }
+  }
+
+  const handleSaveDetails = (details: {
+    title: string;
+    description: string;
+    price: number;
+    afterImage: string;
+    materials?: string[];
+    sections?: string[];
+    hasCalculations?: boolean;
+    isApproved?: boolean;
+  }) => {
+    if (activeDetailsOptionId) {
+      const updatedOptions = options.map(opt => 
+        opt.id === activeDetailsOptionId ? { 
+          ...opt, 
+          hasCalculations: details.hasCalculations || false,
+          isApproved: details.isApproved || false,
+          title: details.title,
+          description: details.description,
+          price: details.price,
+          afterImage: details.afterImage,
+          materials: details.materials,
+          sections: details.sections,
+          content: details.title,
+          details: {
+            ...opt.details,
+            title: details.title,
+            description: details.description,
+            price: details.price || 0,
+            afterImage: details.afterImage,
+            materials: details.materials || [],
+            sections: details.sections || []
+          }
+        } : opt
+      ) as Option[];
+      setOptions(updatedOptions);
+      
+      // Save to localStorage
+      const opportunityId = window.location.pathname.split('/').pop();
+      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
+      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
+      
+      if (existingIndex >= 0) {
+        opportunities[existingIndex] = {
+          ...opportunities[existingIndex],
+          options: updatedOptions,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('opportunities', JSON.stringify(opportunities));
+      }
+    }
+  };
 
   return (
     <main className="container mx-auto p-4 relative">
@@ -808,12 +870,10 @@ export default function OpportunityPage() {
                   <div className="group relative">
                     <div
                       onClick={() => handleOptionClick(option.id)}
-                      className={`${option.details ? 'h-[500px]' : 'aspect-square'} w-[280px] rounded-lg border-2 ${
+                      className={`${option.hasCalculations ? 'h-[500px]' : 'aspect-square'} w-[280px] rounded-lg border-2 ${
                         option.isApproved 
                           ? 'border-green-500 bg-green-50' 
-                          : option.details
-                          ? 'border-gray-200 hover:border-gray-300'
-                          : 'border-dashed border-gray-200 hover:border-gray-300'
+                          : 'border-gray-200 hover:border-gray-300'
                       } transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700 bg-white flex-shrink-0 snap-center cursor-pointer relative`}
                     >
                       {/* Option Management Buttons */}
@@ -847,7 +907,7 @@ export default function OpportunityPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleDuplicateOption(option.id)
+                            handleDuplicateOption(option)
                           }}
                           className="p-1 hover:bg-gray-100 rounded-full"
                         >
@@ -870,126 +930,82 @@ export default function OpportunityPage() {
 
                       {/* Main Content */}
                       <div className="w-full h-full flex flex-col">
-                        {option.details ? (
+                        {option.hasCalculations && (
                           <>
                             <div className="relative w-full h-[200px]">
-                              <Image
-                                src={option.details.afterImage}
-                                alt="After"
-                                fill
-                                className="object-cover rounded-t-lg"
-                              />
+                              {option.afterImage && (
+                                <Image
+                                  src={option.afterImage}
+                                  alt="After"
+                                  fill
+                                  className="object-cover rounded-t-lg"
+                                />
+                              )}
                             </div>
                             <div className="flex-1 w-full p-4 flex flex-col gap-3">
-                              <span className="text-sm font-medium text-gray-900">{option.content}</span>
+                              <span className="text-sm font-medium text-gray-900 whitespace-pre-wrap">{option.title}</span>
                               <div className="flex flex-col gap-1">
-                                <span className="text-lg font-bold text-gray-900">${option.details.price.toLocaleString()}</span>
-                                <span className="text-xs text-gray-500">As low as ${calculateMonthlyPayment(option.details.price).toLocaleString()}/month</span>
+                                <span className="text-lg font-bold text-gray-900">${option.price.toLocaleString()}</span>
+                                <span className="text-xs text-gray-500">As low as ${calculateMonthlyPayment(option.price).toLocaleString()}/month</span>
                               </div>
                               <div className="text-xs text-gray-600">
-                                <div className="font-medium text-gray-900">{option.details.title}</div>
-                                <div className="line-clamp-3">{option.details.description}</div>
-                                {option.details.address && (
-                                  <div className="mt-1 text-gray-500">
-                                    <svg className="w-3.5 h-3.5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    {option.details.address}
-                                  </div>
-                                )}
+                                <div className="whitespace-pre-wrap line-clamp-3">{option.description}</div>
                               </div>
                             </div>
                           </>
-                        ) : (
-                          <div className="flex items-center justify-center flex-1">
-                            <span className="text-sm font-medium">{option.content}</span>
-                          </div>
                         )}
 
                         {/* Action Buttons */}
-                        {option.isComplete && (
-                          <div className="w-full p-4 flex flex-col gap-2 mt-auto">
-                            {option.details && (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleToggleApproval(option.id)
-                                }}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer text-center ${
-                                  option.isApproved
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                }`}
-                              >
-                                {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
-                              </div>
-                            )}
+                        <div className="w-full p-4 flex flex-col gap-2 mt-auto">
+                          {option.hasCalculations && (
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
-                                window.open('https://hover.to/design-studio/15273950/model/15271361', '_blank', 'noopener,noreferrer')
-                                // Add details after clicking Calculate costs & pricing
-                                const updatedOptions = options.map(opt => 
-                                  opt.id === option.id ? { 
-                                    ...opt, 
-                                    details: {
-                                      title: "GAF Timberline HDZ",
-                                      description: "Shingles from GAF. The American Harvest® Collection with Advanced Protection® Shingle Technology will give you the modern architectural style you want, at a price you can afford, with rugged, dependable performance that only a Timberline® roof can offer.",
-                                      price: 156799,
-                                      afterImage: '/after2.png'
-                                    }
-                                  } : opt
-                                )
-                                setOptions(updatedOptions)
-                                
-                                // Save to localStorage immediately
-                                const opportunityId = window.location.pathname.split('/').pop()
-                                const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-                                const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId)
-                                
-                                if (existingIndex >= 0) {
-                                  opportunities[existingIndex] = {
-                                    ...opportunities[existingIndex],
-                                    options: updatedOptions,
-                                    lastUpdated: new Date().toISOString()
-                                  }
-                                  localStorage.setItem('opportunities', JSON.stringify(opportunities))
-                                }
-                                
-                                toast.success('Auto saved')
+                                handleToggleApproval(option.id)
                               }}
-                              className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer text-center ${
+                                option.isApproved
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                              }`}
                             >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
-                              Calculate costs & pricing
+                              {option.isApproved ? 'Approved ✓' : 'Mark as Approved'}
                             </div>
-                            {option.details && (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleShowDetails(option.id)
-                                }}
-                                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                Show details
-                              </div>
-                            )}
+                          )}
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleShowDetails(option.id)
+                            }}
+                            className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit details
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>
                   {index < options.length - 1 && (
                     <Select
                       value={operators[index]?.type || 'and'}
-                      onValueChange={(value: 'and' | 'or') => handleOperatorChange(operators[index].id, value)}
+                      onValueChange={(value: 'and' | 'or') => {
+                        // If no operator exists at this index, create one
+                        if (!operators[index]) {
+                          const newOperator = {
+                            id: operators.length + 1,
+                            type: value
+                          };
+                          const newOperators = [...operators];
+                          newOperators[index] = newOperator;
+                          setOperators(newOperators);
+                          saveToHistory(options, newOperators);
+                        } else {
+                          handleOperatorChange(operators[index].id, value);
+                        }
+                      }}
                     >
                       <SelectTrigger className="w-[80px]">
                         <SelectValue />
@@ -1005,9 +1021,9 @@ export default function OpportunityPage() {
               
               <button
                 onClick={handleAddOption}
-                className="w-10 h-10 rounded-full border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white flex-shrink-0"
+                className={`${options.length === 0 ? 'w-28 h-28' : 'w-10 h-10'} rounded-full border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white flex-shrink-0`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`${options.length === 0 ? 'w-12 h-12' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
@@ -1248,16 +1264,55 @@ export default function OpportunityPage() {
 
       <EstimateDetails
         isOpen={showDetails}
-        onClose={(details) => {
-          if (activeDetailsOptionId) {
-            handleDetailsClose(activeDetailsOptionId, details)
-          } else {
-            setShowDetails(false)
+        onClose={() => setShowDetails(false)}
+        onCalculate={() => handleCalculate(activeDetailsOptionId!)}
+        optionDetails={options.find(opt => opt.id === activeDetailsOptionId)}
+        onSave={(details) => {
+          const updatedOptions = options.map(opt => {
+            if (opt.id === activeDetailsOptionId) {
+              return {
+                ...opt,
+                hasCalculations: true,
+                isApproved: details.isApproved || false,
+                title: details.title,
+                description: details.description,
+                price: details.price || 0,
+                afterImage: details.afterImage,
+                materials: details.materials || [],
+                sections: details.sections || [],
+                content: details.title,
+                isComplete: true,
+                details: {
+                  ...opt.details,
+                  title: details.title,
+                  description: details.description,
+                  price: details.price || 0,
+                  afterImage: details.afterImage,
+                  materials: details.materials || [],
+                  sections: details.sections || []
+                }
+              };
+            }
+            return opt;
+          });
+          setOptions(updatedOptions);
+
+          // Save to localStorage
+          const opportunityId = window.location.pathname.split('/').pop();
+          const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
+          const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
+          
+          if (existingIndex >= 0) {
+            opportunities[existingIndex] = {
+              ...opportunities[existingIndex],
+              options: updatedOptions,
+              lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem('opportunities', JSON.stringify(opportunities));
           }
+
+          setShowDetails(false);
         }}
-        currentOptionId={activeDetailsOptionId || 0}
-        totalOptions={options.length}
-        onNavigate={handleNavigateDetails}
       />
 
       <Toaster position="top-center" />

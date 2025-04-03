@@ -9,11 +9,20 @@ interface Option {
   content: string
   isComplete: boolean
   isApproved?: boolean
+  title: string
+  description: string
+  price?: number
+  afterImage: string
+  materials?: string[]
+  sections?: string[]
+  hasCalculations?: boolean
   details?: {
+    price: number
     title: string
     description: string
-    price: number
     afterImage: string
+    materials?: string[]
+    sections?: string[]
   }
 }
 
@@ -31,13 +40,21 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
   const [editingPackage, setEditingPackage] = useState<number | null>(null)
   const [packageNames, setPackageNames] = useState<{ [key: number]: string }>({})
 
+  // Ensure operators array is properly aligned with options
+  const alignedOperators = options.map((_, index) => {
+    if (index < operators.length) {
+      return operators[index]
+    }
+    return { id: index + 1, type: 'and' as const }
+  })
+
   // Group options by "And" relationships
   const andGroups: Option[][] = []
   let currentGroup: Option[] = []
 
   options.forEach((option, index) => {
     currentGroup.push(option)
-    if (index < operators.length && operators[index].type === 'or') {
+    if (index < alignedOperators.length && alignedOperators[index].type === 'or') {
       andGroups.push([...currentGroup])
       currentGroup = []
     }
@@ -49,7 +66,9 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
   // Calculate total price for each "And" group
   const andGroupTotals = andGroups.map(group => {
     const total = group.reduce((sum, option) => {
-      return sum + (option.details?.price || 0)
+      // Try to get price from either direct price property or details.price
+      const price = option.price ?? option.details?.price ?? 0
+      return sum + price
     }, 0)
     return {
       options: group,
@@ -85,8 +104,15 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
         <button
           onClick={() => {
             const data = {
-              options,
-              operators,
+              options: options.map(opt => ({
+                ...opt,
+                details: {
+                  ...opt.details,
+                  materials: opt.details?.materials || [],
+                  sections: opt.details?.sections || []
+                }
+              })),
+              operators: alignedOperators,
               packageNames
             }
             const encodedData = encodeURIComponent(JSON.stringify(data))

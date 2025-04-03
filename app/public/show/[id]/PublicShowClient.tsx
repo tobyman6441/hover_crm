@@ -122,9 +122,6 @@ export default function PublicShowClient({ id }: PageProps) {
       <div className="max-w-7xl mx-auto px-4">
         <Card className="p-6">
           <div className="space-y-8">
-            {/* Title */}
-            <h1 className="text-3xl font-bold text-center">{showData.title}</h1>
-
             {/* Navigation Buttons */}
             <div className="flex items-center justify-center gap-2 mb-4">
               <button
@@ -149,67 +146,73 @@ export default function PublicShowClient({ id }: PageProps) {
               </button>
             </div>
 
-            {/* Image Slider */}
-            <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
-              <Image
-                src={isSliderVisible ? selectedOption.details?.beforeImage || "" : selectedOption.details?.afterImage || ""}
-                alt={isSliderVisible ? "Before" : "After"}
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-
-            {/* Main Content */}
-            <div className="space-y-8">
-              {/* Materials */}
-              {selectedOption.details?.materials && selectedOption.details.materials.length > 0 && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-center">Materials</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {selectedOption.details.materials.map((material) => (
-                      <div key={material.id} className="space-y-2">
-                        <h3 className="text-xl font-bold">{material.title}</h3>
-                        <p className="text-gray-600">{material.description}</p>
-                      </div>
-                    ))}
+            {/* Package Options */}
+            <div className="space-y-12">
+              {showData.options.map((option, index) => (
+                <div key={option.id} className="space-y-6">
+                  {/* Option Images */}
+                  <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
+                    <Image
+                      src={isSliderVisible ? option.details?.beforeImage || "" : option.details?.afterImage || ""}
+                      alt={isSliderVisible ? "Before" : "After"}
+                      fill
+                      className="object-contain"
+                      priority={index === 0}
+                    />
                   </div>
-                </div>
-              )}
 
-              {/* Sections */}
-              {selectedOption.details?.sections && selectedOption.details.sections.length > 0 && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-center">Project Details</h2>
-                  <div className="space-y-4">
-                    {selectedOption.details.sections.map((section) => (
-                      <div key={section.id} className="space-y-2">
-                        <h3 className="text-xl font-semibold">{section.title}</h3>
-                        <p className="text-gray-600">{section.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Price and Financing */}
-              {selectedOption.details?.price && (
-                <div className="border-t pt-6">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="text-3xl font-bold">
-                      ${selectedOption.details.price.toLocaleString()}
-                    </div>
-                    <div className="text-lg text-gray-600">
-                      As low as ${monthlyPayment.toLocaleString()}/month
-                    </div>
-                    {selectedOption.details.financeSettings && (
-                      <div className="text-sm text-gray-500">
-                        {selectedOption.details.financeSettings.apr}% APR for {selectedOption.details.financeSettings.termLength} months
-                      </div>
+                  {/* Option Title and Description */}
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold">{option.details?.title || option.content}</h2>
+                    {option.details?.description && (
+                      <p className="mt-2 text-gray-600">{option.details.description}</p>
                     )}
                   </div>
+
+                  {/* Materials (if any) */}
+                  {option.details?.materials && option.details.materials.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-semibold text-center">Materials</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {option.details.materials.map((material) => (
+                          <div key={material.id} className="p-4 bg-gray-50 rounded-lg">
+                            <h4 className="font-medium">{material.title}</h4>
+                            <p className="text-sm text-gray-600">{material.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Price Information */}
+                  {option.details?.price && (
+                    <div className="border-t pt-6">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="text-3xl font-bold">
+                          ${option.details.price.toLocaleString()}
+                        </div>
+                        <div className="text-lg text-gray-600">
+                          As low as ${calculateMonthlyPayment(
+                            option.details.price,
+                            option.details.financeSettings?.apr || 6.99,
+                            option.details.financeSettings?.termLength || 60
+                          ).toLocaleString()}/month
+                        </div>
+                        {option.details.financeSettings && (
+                          <div className="text-sm text-gray-500">
+                            {option.details.financeSettings.apr}% APR for {option.details.financeSettings.termLength} months
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Divider between options */}
+                  {index < showData.options.length - 1 && (
+                    <div className="border-b border-gray-200" />
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </Card>
