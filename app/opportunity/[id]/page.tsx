@@ -150,7 +150,6 @@ export default function OpportunityPage() {
   const [title, setTitle] = useState('New Sales Opportunity')
   const [isJobSelectorOpen, setIsJobSelectorOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeOptionId, setActiveOptionId] = useState<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [selectedJobs, setSelectedJobs] = useState<Job[]>([])
   const [showErrorDialog, setShowErrorDialog] = useState(false)
@@ -405,7 +404,7 @@ export default function OpportunityPage() {
   };
 
   const handleOptionClick = (optionId: number) => {
-    setActiveOptionId(optionId)
+    setActiveDetailsOptionId(optionId)
     setIsJobSelectorOpen(true)
   }
 
