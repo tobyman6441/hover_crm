@@ -633,25 +633,10 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
   const handleToggleApproval = (optionId: number) => {
     const updatedOptions = options.map(opt => 
       opt.id === optionId ? { ...opt, isApproved: !opt.isApproved } : opt
-    );
-    setOptions(updatedOptions);
-    
-    // Save to localStorage immediately
-    const opportunityId = window.location.pathname.split('/').pop();
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
-    
-    if (existingIndex >= 0) {
-      opportunities[existingIndex] = {
-        ...opportunities[existingIndex],
-        options: updatedOptions,
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem('opportunities', JSON.stringify(opportunities));
-    }
-    
-    toast.success('Auto saved');
-  };
+    )
+    setOptions(updatedOptions)
+    saveToHistory(updatedOptions, operators)
+  }
 
   const handleShowDetails = (optionId: number) => {
     setActiveDetailsOptionId(optionId)
@@ -690,58 +675,6 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
       }
     }
   }
-
-  const handleSaveDetails = (details: {
-    title: string;
-    description: string;
-    price: number;
-    afterImage: string;
-    materials?: string[];
-    sections?: string[];
-    hasCalculations?: boolean;
-    isApproved?: boolean;
-  }) => {
-    if (activeDetailsOptionId) {
-      const updatedOptions = options.map(opt => 
-        opt.id === activeDetailsOptionId ? { 
-          ...opt, 
-          hasCalculations: details.hasCalculations || false,
-          isApproved: details.isApproved || false,
-          title: details.title,
-          description: details.description,
-          price: details.price,
-          afterImage: details.afterImage,
-          materials: details.materials,
-          sections: details.sections,
-          content: details.title,
-          details: {
-            ...opt.details,
-            title: details.title,
-            description: details.description,
-            price: details.price || 0,
-            afterImage: details.afterImage,
-            materials: details.materials || [],
-            sections: details.sections || []
-          }
-        } : opt
-      ) as Option[];
-      setOptions(updatedOptions);
-      
-      // Save to localStorage
-      const opportunityId = window.location.pathname.split('/').pop();
-      const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
-      const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
-      
-      if (existingIndex >= 0) {
-        opportunities[existingIndex] = {
-          ...opportunities[existingIndex],
-          options: updatedOptions,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('opportunities', JSON.stringify(opportunities));
-      }
-    }
-  };
 
   const saveOpportunity = (opportunityData: Opportunity) => {
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
