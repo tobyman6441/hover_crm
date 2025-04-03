@@ -654,30 +654,6 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
     toast.success('Auto saved');
   };
 
-  const handleNavigateDetails = (direction: 'prev' | 'next') => {
-    if (!activeOptionId) return
-
-    const currentIndex = options.findIndex(opt => opt.id === activeOptionId)
-    if (direction === 'prev' && currentIndex > 0) {
-      setActiveOptionId(options[currentIndex - 1].id)
-    } else if (direction === 'next' && currentIndex < options.length - 1) {
-      setActiveOptionId(options[currentIndex + 1].id)
-    }
-  }
-
-  const saveOpportunity = (opportunityData: Opportunity) => {
-    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
-    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityData.id)
-    
-    if (existingIndex >= 0) {
-      opportunities[existingIndex] = opportunityData
-    } else {
-      opportunities.push(opportunityData)
-    }
-    
-    localStorage.setItem('opportunities', JSON.stringify(opportunities))
-  }
-
   const handleShowDetails = (optionId: number) => {
     setActiveDetailsOptionId(optionId)
     setShowDetails(true)
@@ -767,6 +743,19 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
       }
     }
   };
+
+  const saveOpportunity = (opportunityData: Opportunity) => {
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[]
+    const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityData.id)
+    
+    if (existingIndex >= 0) {
+      opportunities[existingIndex] = opportunityData
+    } else {
+      opportunities.push(opportunityData)
+    }
+    
+    localStorage.setItem('opportunities', JSON.stringify(opportunities))
+  }
 
   return (
     <main className="container mx-auto p-4 relative">
