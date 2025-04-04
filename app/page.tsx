@@ -336,8 +336,8 @@ export default function KanbanView() {
 
   return (
     <main className="container mx-auto p-4 h-screen flex flex-col">
-      <nav className="flex items-center justify-between mb-8">
-        <div className="h-8 w-24 relative">
+      <nav className="flex flex-row items-center justify-between mb-4 sm:mb-8 gap-4">
+        <div className="h-6 sm:h-8 w-16 sm:w-24 relative">
           <Image
             src="/brand/logos/Wordmark/SVG/Logo-Black.svg"
             alt="Hover"
@@ -346,18 +346,18 @@ export default function KanbanView() {
             priority
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="w-14 h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors"
+              className="w-8 h-8 sm:w-14 sm:h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
             {isSearchOpen && (
-              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
+              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
                 <div className="relative">
                   <input
                     type="text"
@@ -379,37 +379,37 @@ export default function KanbanView() {
               </div>
             )}
           </div>
-          <button className="h-14 px-8 bg-[#F7F7F7] rounded-full text-black hover:bg-gray-100 transition-colors font-medium">
+          <button className="h-8 sm:h-14 px-3 sm:px-8 bg-[#F7F7F7] rounded-full text-black hover:bg-gray-100 transition-colors font-medium text-xs sm:text-base">
             Schedule demo
           </button>
-          <button className="h-14 px-8 bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors font-medium flex items-center gap-2">
+          <button className="h-8 sm:h-14 px-3 sm:px-8 bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors font-medium text-xs sm:text-base flex items-center gap-2">
             Add
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
-          <button className="w-14 h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button className="w-8 h-8 sm:w-14 sm:h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </button>
         </div>
       </nav>
 
-      <div className="mb-8">
-        <nav className="flex gap-12">
-          <a href="https://hover.to/wr/properties" className="text-[#ADADAD] hover:text-gray-900 text-4xl font-semibold transition-colors">Projects</a>
-          <a href="https://hover.to/wr/properties/design" className="text-[#ADADAD] hover:text-gray-900 text-4xl font-semibold transition-colors">Design ideas</a>
-          <a href="#" className="text-black text-4xl font-semibold">Sales Opportunities</a>
+      <div className="mb-4 sm:mb-8 overflow-x-auto">
+        <nav className="flex gap-3 sm:gap-12 min-w-max">
+          <a href="https://hover.to/wr/properties" className="text-[#ADADAD] hover:text-gray-900 text-xl sm:text-4xl font-semibold transition-colors">Projects</a>
+          <a href="https://hover.to/wr/properties/design" className="text-[#ADADAD] hover:text-gray-900 text-xl sm:text-4xl font-semibold transition-colors">Design ideas</a>
+          <a href="#" className="text-black text-xl sm:text-4xl font-semibold">Sales Opportunities</a>
         </nav>
       </div>
 
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 w-full sm:w-auto">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'kanban'
                   ? 'bg-black text-white'
                   : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -419,7 +419,7 @@ export default function KanbanView() {
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'grid'
                   ? 'bg-black text-white'
                   : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
@@ -428,15 +428,15 @@ export default function KanbanView() {
               Grid View
             </button>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Filter className="h-4 w-4" />
+                <Button variant="outline" className="gap-2 text-xs sm:text-sm">
+                  <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
                   Filters
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-4">
+              <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 p-4">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Price Range</Label>
@@ -446,7 +446,7 @@ export default function KanbanView() {
                         placeholder="Min"
                         value={priceRange.min || ''}
                         onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value ? Number(e.target.value) : undefined }))}
-                        className="w-24"
+                        className="w-24 sm:w-24"
                       />
                       <span>-</span>
                       <Input
@@ -454,39 +454,43 @@ export default function KanbanView() {
                         placeholder="Max"
                         value={priceRange.max || ''}
                         onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value ? Number(e.target.value) : undefined }))}
-                        className="w-24"
+                        className="w-24 sm:w-24"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="approved"
-                        checked={filters.status.includes('approved')}
-                        onCheckedChange={(checked) => {
-                          setFilters(prev => ({
-                            ...prev,
-                            status: checked
-                              ? [...prev.status, 'approved']
-                              : prev.status.filter(s => s !== 'approved')
-                          }))
-                        }}
-                      />
-                      <Label htmlFor="approved">Approved</Label>
-                      <Checkbox
-                        id="pending"
-                        checked={filters.status.includes('pending')}
-                        onCheckedChange={(checked) => {
-                          setFilters(prev => ({
-                            ...prev,
-                            status: checked
-                              ? [...prev.status, 'pending']
-                              : prev.status.filter(s => s !== 'pending')
-                          }))
-                        }}
-                      />
-                      <Label htmlFor="pending">Pending</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="approved"
+                          checked={filters.status.includes('approved')}
+                          onCheckedChange={(checked) => {
+                            setFilters(prev => ({
+                              ...prev,
+                              status: checked
+                                ? [...prev.status, 'approved']
+                                : prev.status.filter(s => s !== 'approved')
+                            }))
+                          }}
+                        />
+                        <Label htmlFor="approved" className="text-xs sm:text-sm">Approved</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="pending"
+                          checked={filters.status.includes('pending')}
+                          onCheckedChange={(checked) => {
+                            setFilters(prev => ({
+                              ...prev,
+                              status: checked
+                                ? [...prev.status, 'pending']
+                                : prev.status.filter(s => s !== 'pending')
+                            }))
+                          }}
+                        />
+                        <Label htmlFor="pending" className="text-xs sm:text-sm">Pending</Label>
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -495,7 +499,7 @@ export default function KanbanView() {
                       value={filters.lastUpdated}
                       onValueChange={(value) => setFilters(prev => ({ ...prev, lastUpdated: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select time range" />
                       </SelectTrigger>
                       <SelectContent>
@@ -517,7 +521,7 @@ export default function KanbanView() {
                           ...prev,
                           options: { ...prev.options, min: e.target.value ? Number(e.target.value) : undefined }
                         }))}
-                        className="w-24"
+                        className="w-24 sm:w-24"
                       />
                       <span>-</span>
                       <Input
@@ -528,7 +532,7 @@ export default function KanbanView() {
                           ...prev,
                           options: { ...prev.options, max: e.target.value ? Number(e.target.value) : undefined }
                         }))}
-                        className="w-24"
+                        className="w-24 sm:w-24"
                       />
                     </div>
                   </div>
@@ -539,7 +543,7 @@ export default function KanbanView() {
               value={sortBy}
               onValueChange={setSortBy}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] sm:w-[200px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -555,9 +559,9 @@ export default function KanbanView() {
         </div>
         <button
           onClick={handleAddOpportunity}
-          className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2"
+          className="px-3 sm:px-4 py-2 bg-black text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           <span>New Opportunity</span>
@@ -569,9 +573,9 @@ export default function KanbanView() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd} 
         >
-          <div className="flex gap-4 overflow-x-auto h-[calc(100vh-12rem)]">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 overflow-x-auto sm:overflow-x-auto overflow-y-auto sm:overflow-y-hidden h-[calc(100vh-16rem)] sm:h-[calc(100vh-12rem)]">
             {columns.map((column) => (
-              <div key={column.id} className="flex-shrink-0 w-[300px]">
+              <div key={column.id} className="flex-shrink-0 w-full sm:w-[280px] sm:w-[300px]">
                 <DroppableColumn 
                   id={column.id}
                   title={column.title}
@@ -596,7 +600,7 @@ export default function KanbanView() {
                           setEditingColumnName('')
                         }
                       }}
-                      className="text-sm font-medium bg-transparent border-b-2 border-gray-200 focus:border-gray-400 outline-none px-1"
+                      className="text-xs sm:text-sm font-medium bg-transparent border-b-2 border-gray-200 focus:border-gray-400 outline-none px-1"
                       autoFocus
                     />
                   }
@@ -606,7 +610,7 @@ export default function KanbanView() {
                   }}
                   onDeleteClick={() => handleDeleteColumn(column.id)}
                 >
-                  <div className="space-y-4">
+                  <div className="space-y-2 sm:space-y-4">
                     <SortableContext 
                       items={filteredOpportunities.filter(opp => opp.column === column.id).map(opp => opp.id)} 
                       strategy={verticalListSortingStrategy}
@@ -633,13 +637,13 @@ export default function KanbanView() {
               </div>
             ))}
 
-            <div className="space-y-3 min-w-[240px]">
+            <div className="space-y-2 sm:space-y-3 min-w-full sm:min-w-[220px] sm:min-w-[240px]">
               <div className="flex items-center justify-between mb-2 h-7">
                 {isAddingColumn ? (
                   <input
                     type="text"
                     placeholder="Enter column name..."
-                    className="h-7 w-full px-2 rounded border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-200 font-medium text-sm"
+                    className="h-7 w-full px-2 rounded border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-200 font-medium text-xs sm:text-sm"
                     value={newColumnName}
                     onChange={(e) => setNewColumnName(e.target.value)}
                     onKeyDown={(e) => handleKeyPress(e, 'add')}
@@ -651,7 +655,7 @@ export default function KanbanView() {
               </div>
 
               {isAddingColumn ? (
-                <div className="min-h-[150px] bg-gray-50 rounded-lg p-3">
+                <div className="min-h-[120px] sm:min-h-[150px] bg-gray-50 rounded-lg p-3">
                   <div className="flex gap-2">
                     <button
                       onClick={handleAddColumn}
@@ -673,10 +677,10 @@ export default function KanbanView() {
               ) : (
                 <button
                   onClick={() => setIsAddingColumn(true)}
-                  className="min-h-[150px] w-full rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white"
+                  className="min-h-[120px] sm:min-h-[150px] w-full rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 bg-white"
                 >
                   <span className="flex items-center gap-1.5 text-xs font-medium">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Add Column
@@ -704,7 +708,7 @@ export default function KanbanView() {
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
           {filteredOpportunities.map(opportunity => {
             const column = columns.find(col => col.id === opportunity.column)
             return (
@@ -723,19 +727,19 @@ export default function KanbanView() {
           })}
 
           {filteredOpportunities.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="col-span-full flex flex-col items-center justify-center py-8 sm:py-12 text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900">No opportunities yet</h3>
-              <p className="mt-1 text-sm text-gray-500">Get started by creating a new sales opportunity.</p>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">No opportunities yet</h3>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">Get started by creating a new sales opportunity.</p>
               <button
                 onClick={handleAddOpportunity}
-                className="mt-4 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2"
+                className="mt-4 px-3 sm:px-4 py-2 bg-black text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span>New Opportunity</span>
