@@ -198,8 +198,8 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
               </div>
             </div>
 
-            {/* Signature Section for each package */}
-            <div className="bg-gray-50 p-6 rounded-lg space-y-6">
+            {/* Signature Section for each package - Only visible in print view */}
+            <div className="hidden print:block bg-gray-50 p-6 rounded-lg space-y-6">
               <div className="text-sm font-medium text-gray-700 mb-4">
                 By signing below, I agree to proceed with {packageNames[index] || `Package ${index + 1}`}
               </div>
