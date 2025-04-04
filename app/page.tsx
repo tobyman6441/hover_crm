@@ -364,7 +364,7 @@ export default function KanbanView() {
                     placeholder="Search opportunities..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-gray-200"
                     autoFocus
                   />
                   <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,11 +396,11 @@ export default function KanbanView() {
         </div>
       </nav>
 
-      <div className="mb-4 sm:mb-8 overflow-x-auto">
-        <nav className="flex gap-3 sm:gap-12 min-w-max">
-          <a href="https://hover.to/wr/properties" className="text-[#ADADAD] hover:text-gray-900 text-xl sm:text-4xl font-semibold transition-colors">Projects</a>
-          <a href="https://hover.to/wr/properties/design" className="text-[#ADADAD] hover:text-gray-900 text-xl sm:text-4xl font-semibold transition-colors">Design ideas</a>
-          <a href="#" className="text-black text-xl sm:text-4xl font-semibold">Sales Opportunities</a>
+      <div className="mb-4 sm:mb-8">
+        <nav className="flex gap-2 sm:gap-6">
+          <a href="https://hover.to/wr/properties" className="text-[#ADADAD] hover:text-gray-900 text-lg sm:text-3xl font-semibold transition-colors">Projects</a>
+          <a href="https://hover.to/wr/properties/design" className="text-[#ADADAD] hover:text-gray-900 text-lg sm:text-3xl font-semibold transition-colors">Design ideas</a>
+          <a href="#" className="text-black text-lg sm:text-3xl font-semibold">Sales Opportunities</a>
         </nav>
       </div>
 
