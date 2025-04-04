@@ -782,7 +782,7 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
         <div className="relative w-full">
           <div 
             ref={scrollContainerRef}
-            className="flex items-start gap-4 overflow-x-auto pb-4 px-4 snap-x snap-mandatory scrollbar-hide"
+            className="flex items-start gap-4 overflow-x-auto pb-4 px-4 scrollbar-hide"
           >
             <div className="flex items-start gap-4 mx-auto">
               {options.map((option, index) => (

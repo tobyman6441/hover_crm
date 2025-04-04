@@ -357,7 +357,7 @@ export default function KanbanView() {
               </svg>
             </button>
             {isSearchOpen && (
-              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
+              <div className="fixed sm:absolute left-1/2 -translate-x-1/2 right-auto top-16 sm:top-full sm:right-0 sm:left-auto sm:translate-x-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
                 <div className="relative">
                   <input
                     type="text"
