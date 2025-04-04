@@ -41,24 +41,30 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
   const [packageNames, setPackageNames] = useState<{ [key: number]: string }>({})
 
   // Ensure operators array is properly aligned with options
-  const alignedOperators = options.map((_, index) => {
-    if (index < operators.length) {
-      return operators[index]
-    }
-    return { id: index + 1, type: 'and' as const }
-  })
+  const alignedOperators = operators.slice(0, Math.max(0, options.length - 1))
 
   // Group options by "And" relationships
   const andGroups: Option[][] = []
   let currentGroup: Option[] = []
 
-  options.forEach((option, index) => {
-    currentGroup.push(option)
-    if (index < alignedOperators.length && alignedOperators[index].type === 'or') {
-      andGroups.push([...currentGroup])
-      currentGroup = []
+  // Process options to create groups
+  for (let i = 0; i < options.length; i++) {
+    const option = options[i]
+    
+    if (currentGroup.length === 0) {
+      currentGroup.push(option)
+    } else {
+      const operator = alignedOperators[i - 1]
+      if (operator?.type === 'or') {
+        andGroups.push([...currentGroup])
+        currentGroup = [option]
+      } else {
+        currentGroup.push(option)
+      }
     }
-  })
+  }
+
+  // Add the last group if it's not empty
   if (currentGroup.length > 0) {
     andGroups.push(currentGroup)
   }
@@ -66,7 +72,6 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
   // Calculate total price for each "And" group
   const andGroupTotals = andGroups.map(group => {
     const total = group.reduce((sum, option) => {
-      // Try to get price from either direct price property or details.price
       const price = option.price ?? option.details?.price ?? 0
       return sum + price
     }, 0)
@@ -127,9 +132,9 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
           Share
         </button>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {andGroupTotals.map((group, index) => (
-          <div key={index} className="space-y-4">
+          <div key={`group-${index}`} className="space-y-6 pb-8 border-b border-gray-200 last:border-0">
             <div className={`flex items-center gap-8 p-4 rounded-lg transition-colors ${
               group.allApproved ? 'bg-green-50' : ''
             }`}>
@@ -192,8 +197,30 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
                 </div>
               </div>
             </div>
+
+            {/* Signature Section for each package */}
+            <div className="bg-gray-50 p-6 rounded-lg space-y-6">
+              <div className="text-sm font-medium text-gray-700 mb-4">
+                By signing below, I agree to proceed with {packageNames[index] || `Package ${index + 1}`}
+              </div>
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Customer Signature</p>
+                  <div className="h-8 border-b border-gray-400"></div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Date</p>
+                  <div className="h-8 border-b border-gray-400"></div>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Print Name</p>
+                <div className="h-8 border-b border-gray-400"></div>
+              </div>
+            </div>
+
             {index < andGroupTotals.length - 1 && (
-              <div className="text-center text-sm text-gray-500">OR</div>
+              <div className="text-center text-sm font-medium text-gray-500 pt-4">OR</div>
             )}
           </div>
         ))}
