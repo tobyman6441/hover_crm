@@ -227,14 +227,14 @@ export function OpportunityCard({
       <div className="space-y-1">
         {options.map((option) => (
           <div key={option.id} className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 flex-1 min-w-0">
               {option.content}
             </span>
             {option.isApproved && (
-              <span className="text-xs text-green-600 ml-auto">
+              <span className="text-xs text-green-600 ml-auto flex-shrink-0">
                 Approved
               </span>
             )}

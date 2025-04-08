@@ -456,18 +456,18 @@ export function OpportunityCard({
             <div className="space-y-1">
               {completedOptions.map((option, index) => (
                 <div key={`${option.id}-${index}-${option.content}`} className="flex items-center gap-2 text-sm text-gray-600">
-                  <span className="text-xs font-medium text-gray-400">Option {index + 1}</span>
+                  <span className="text-xs font-medium text-gray-400 w-16 flex-shrink-0">Option {index + 1}</span>
                   {option.isApproved ? (
-                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   )}
-                  <div className="flex flex-col">
-                    <span className={`truncate ${option.isApproved ? 'text-green-700' : ''}`}>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className={`${option.isApproved ? 'text-green-700' : ''}`}>
                       {option.title || option.content}
                     </span>
                   </div>
