@@ -538,34 +538,22 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
 
               {/* Header Section */}
               <div className="space-y-2">
-                <div className="relative group">
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Option name"
-                    className="text-2xl font-bold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0"
-                  />
-                  <div className="absolute -bottom-1 left-0 right-0 h-px bg-gray-200 group-hover:bg-gray-300 transition-colors" />
-                  <p className="absolute -bottom-6 left-0 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to edit the header
-                  </p>
-                </div>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Option name"
+                  className="text-2xl font-bold border border-gray-200 rounded-md focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-0 px-3 py-2"
+                />
               </div>
 
               {/* Description Section */}
               <div className="space-y-2">
-                <div className="relative group">
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Option description"
-                    className="min-h-[100px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0 resize-none"
-                  />
-                  <div className="absolute -bottom-1 left-0 right-0 h-px bg-gray-200 group-hover:bg-gray-300 transition-colors" />
-                  <p className="absolute -bottom-6 left-0 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Click to edit the description
-                  </p>
-                </div>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Option description"
+                  className="min-h-[100px] border border-gray-200 rounded-md focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-0 px-3 py-2 resize-none"
+                />
               </div>
             </div>
           </div>

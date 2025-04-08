@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Trash2 } from 'lucide-react'
+import Image from 'next/image'
+import { calculateMonthlyPayment } from '@/app/utils/calculations'
 
 interface DroppableColumnProps {
   id: string
@@ -31,6 +33,17 @@ interface Option {
   content: string
   isComplete: boolean
   isApproved?: boolean
+  title?: string
+  description?: string
+  price?: number
+  afterImage?: string
+  hasCalculations?: boolean
+  showAsLowAsPrice?: boolean
+  promotion?: {
+    type: string
+    discount: string
+    validUntil: string
+  }
   details?: {
     title: string
     description: string
@@ -278,6 +291,16 @@ export function OpportunityCard({
 }: OpportunityCardProps) {
   const router = useRouter()
 
+  const calculateDiscount = (price: number, promotion: { type: string, discount: string }) => {
+    const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''))
+    const isPercentage = promotion.discount.includes('%')
+    
+    if (isPercentage) {
+      return (price * discountAmount) / 100
+    }
+    return discountAmount
+  }
+
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking buttons
     if ((e.target as HTMLElement).closest('button')) {
@@ -443,9 +466,16 @@ export function OpportunityCard({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   )}
-                  <span className={`truncate ${option.isApproved ? 'text-green-700' : ''}`}>
-                    {option.content}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className={`truncate ${option.isApproved ? 'text-green-700' : ''}`}>
+                      {option.title || option.content}
+                    </span>
+                    {option.details?.description && (
+                      <span className="text-xs text-gray-500 truncate">
+                        {option.details.description}
+                      </span>
+                    )}
+                  </div>
                   {option.isApproved && (
                     <Badge variant="secondary" className="text-xs bg-green-50 text-green-700">
                       Approved
@@ -454,13 +484,47 @@ export function OpportunityCard({
                 </div>
               ))}
             </div>
-            {getPriceRange() && (
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className={`text-sm font-semibold ${options.some(opt => opt.isApproved) ? 'text-green-700' : 'text-gray-900'}`}>
-                  {getPriceRange()}
-                </span>
+            {completedOptions.map((option) => (
+              <div key={option.id} className="mt-3">
+                {option.promotion ? (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500 line-through">
+                        ${option.price?.toLocaleString()}
+                      </span>
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                        {option.promotion.type}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-gray-900">
+                        ${(option.price! - calculateDiscount(option.price!, option.promotion)).toLocaleString()}
+                      </span>
+                      {option.showAsLowAsPrice !== false && option.price && option.price > 0 && (
+                        <span className="text-sm text-gray-500">
+                          As low as ${calculateMonthlyPayment(
+                            option.price - calculateDiscount(option.price, option.promotion)
+                          ).toLocaleString()}/month
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  option.price && (
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-gray-900">
+                        ${option.price.toLocaleString()}
+                      </span>
+                      {option.showAsLowAsPrice !== false && option.price > 0 && (
+                        <span className="text-sm text-gray-500">
+                          As low as ${calculateMonthlyPayment(option.price).toLocaleString()}/month
+                        </span>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
-            )}
+            ))}
           </>
         ) : (
           <p className="text-sm text-gray-500 italic">No options added yet</p>

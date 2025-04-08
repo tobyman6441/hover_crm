@@ -122,6 +122,16 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
     }))
   }
 
+  const calculateDiscount = (price: number, promotion: { type: string, discount: string }) => {
+    const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''))
+    const isPercentage = promotion.discount.includes('%')
+    
+    if (isPercentage) {
+      return (price * discountAmount) / 100
+    }
+    return discountAmount
+  }
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -202,14 +212,7 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
                     let discount = 0;
 
                     if (hasPromotion) {
-                      const discountAmount = parseFloat(opt.promotion!.discount.replace(/[^0-9.]/g, ''))
-                      const isPercentage = opt.promotion!.discount.includes('%')
-                      
-                      if (isPercentage) {
-                        discount = (originalPrice * discountAmount) / 100
-                      } else {
-                        discount = discountAmount
-                      }
+                      discount = calculateDiscount(originalPrice, opt.promotion!)
                       discountedPrice = originalPrice - discount
                     }
 

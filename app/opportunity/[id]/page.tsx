@@ -193,19 +193,50 @@ export default function OpportunityPage() {
       setCurrentHistoryIndex(0)
     } else {
       // Initialize new options with all required fields
-      const initialOptions: Option[] = [{
-        id: 1,
-        title: "This",
-        description: "This is a description of this deal.",
-        price: 0,
-        afterImage: "",
-        content: "This",
-        isComplete: false,
-        materials: [],
-        sections: [],
-        showAsLowAsPrice: true,
-        hasCalculations: false
-      }];
+      const initialOptions: Option[] = [
+        {
+          id: 1,
+          title: "Package 1",
+          content: "Package 1",
+          description: "This is Package 1",
+          price: 10000,
+          afterImage: "/after2.png",
+          isComplete: true,
+          materials: [],
+          sections: [],
+          showAsLowAsPrice: true,
+          hasCalculations: true,
+          details: {
+            title: "Package 1",
+            description: "This is Package 1",
+            price: 10000,
+            afterImage: "/after2.png",
+            materials: [],
+            sections: []
+          }
+        },
+        {
+          id: 2,
+          title: "Package 2",
+          content: "Package 2",
+          description: "This is Package 2",
+          price: 0,
+          afterImage: "/after2.png",
+          isComplete: true,
+          materials: [],
+          sections: [],
+          showAsLowAsPrice: true,
+          hasCalculations: true,
+          details: {
+            title: "Package 2",
+            description: "This is Package 2",
+            price: 0,
+            afterImage: "/after2.png",
+            materials: [],
+            sections: []
+          }
+        }
+      ];
       setOptions(initialOptions)
       const defaultColumn = columns[0]?.id || 'drafts'
       setCurrentColumn(defaultColumn)
@@ -285,11 +316,11 @@ export default function OpportunityPage() {
   const handleAddOption = () => {
     const newOption: Option = {
       id: options.length + 1,
-      title: "This",
+      title: "Option name",
       description: "This is a description of this deal.",
       price: 0,
       afterImage: "",
-      content: "This",
+      content: "Option name",
       isComplete: false,
       materials: [],
       sections: [],
@@ -734,9 +765,10 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
     hasCalculations?: boolean;
     isApproved?: boolean;
     showAsLowAsPrice?: boolean;
-    financeSettings?: {
-      apr: number;
-      termLength: number;
+    promotion?: {
+      type: string;
+      discount: string;
+      validUntil: string;
     };
   }) => {
     const opportunityId = window.location.pathname.split('/').pop();
@@ -751,43 +783,40 @@ Primed offers the classic charm of tongue-and-groove siding with the lasting dur
         afterImage: details.afterImage,
         content: details.title,
         isComplete: true,
-        hasCalculations: details.hasCalculations ?? false,
+        hasCalculations: true,
         isApproved: details.isApproved ?? false,
         showAsLowAsPrice: details.showAsLowAsPrice,
+        promotion: details.promotion,
+        materials: details.materials || [],
+        sections: details.sections || [],
         details: {
           title: details.title,
           description: details.description,
           price: details.price,
           afterImage: details.afterImage,
           materials: details.materials || [],
-          sections: details.sections || [],
-          financeSettings: details.financeSettings
+          sections: details.sections || []
         }
       } : opt
     );
+    
     setOptions(updatedOptions);
+    saveToHistory(updatedOptions, operators);
 
     // Save to localStorage
     const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]') as Opportunity[];
     const existingIndex = opportunities.findIndex((opp: Opportunity) => opp.id === opportunityId);
-
+    
     if (existingIndex !== -1) {
       opportunities[existingIndex] = {
         ...opportunities[existingIndex],
-        options: updatedOptions
-      };
-    } else {
-      opportunities.push({
-        id: opportunityId || '',
-        title: 'New Opportunity',
         options: updatedOptions,
-        operators: operators,
-        lastUpdated: new Date().toISOString(),
-        column: 'Drafts'
-      });
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('opportunities', JSON.stringify(opportunities));
     }
 
-    localStorage.setItem('opportunities', JSON.stringify(opportunities));
+    setShowDetails(false);
   };
 
   return (
