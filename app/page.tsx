@@ -193,7 +193,22 @@ export default function KanbanView() {
     // Load columns from localStorage, fallback to initialColumns if none exist
     const savedColumns = localStorage.getItem('columns')
     if (savedColumns) {
-      setColumns(JSON.parse(savedColumns))
+      const parsedColumns = JSON.parse(savedColumns)
+      
+      // Fix for "Presented to customer" -> "Presented"
+      const updatedColumns = parsedColumns.map((col: Column) => {
+        if (col.id === 'presented' && col.title !== 'Presented') {
+          return { ...col, title: 'Presented' }
+        }
+        return col
+      })
+      
+      // Check if we made any changes
+      if (JSON.stringify(parsedColumns) !== JSON.stringify(updatedColumns)) {
+        localStorage.setItem('columns', JSON.stringify(updatedColumns))
+      }
+      
+      setColumns(updatedColumns)
     } else {
       // If no columns exist in localStorage, save initialColumns
       localStorage.setItem('columns', JSON.stringify(initialColumns))

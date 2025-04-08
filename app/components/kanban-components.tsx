@@ -470,11 +470,6 @@ export function OpportunityCard({
                     <span className={`truncate ${option.isApproved ? 'text-green-700' : ''}`}>
                       {option.title || option.content}
                     </span>
-                    {option.details?.description && (
-                      <span className="text-xs text-gray-500 truncate">
-                        {option.details.description}
-                      </span>
-                    )}
                   </div>
                   {option.isApproved && (
                     <Badge variant="secondary" className="text-xs bg-green-50 text-green-700">

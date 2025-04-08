@@ -1,9 +1,14 @@
-"use client";
-
 import { PromotionForm } from "../../components/PromotionForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function EstimatePage({ params }: { params: { id: string } }) {
+// Define the proper params type for Next.js
+type EstimatePageProps = {
+  params: {
+    id: string;
+  };
+};
+
+export default function EstimatePage({ params }: EstimatePageProps) {
   return (
     <div className="container mx-auto py-8">
       <div className="grid gap-6">
