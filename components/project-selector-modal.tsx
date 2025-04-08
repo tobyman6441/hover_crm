@@ -113,6 +113,7 @@ export function ProjectSelectorModal({
                   <TableCell>
                     <Badge
                       variant="secondary"
+                      shape="rectangle"
                       className="bg-[#2B7760] text-white hover:bg-[#2B7760]/90"
                     >
                       {project.status}

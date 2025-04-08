@@ -125,7 +125,7 @@ export function DroppableColumn({
 
         nonApprovedOptions.forEach((option, index) => {
           currentGroup.push(option)
-          if (index < opp.operators.length && opp.operators[index].type === 'or') {
+          if (index < opp.operators.length && opp.operators[index]?.type === 'or') {
             andGroups.push([...currentGroup])
             currentGroup = []
           }
@@ -174,8 +174,10 @@ export function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col h-full bg-gray-50 rounded-lg p-4",
-        isOver && "ring-2 ring-blue-500 ring-opacity-50 bg-blue-50"
+        "flex flex-col h-full rounded-lg p-4",
+        isOver && "ring-2 ring-blue-500 ring-opacity-50",
+        "bg-gray-50",
+        isOver && "bg-blue-50"
       )}
     >
       <div className="flex items-center justify-between mb-4">
@@ -373,9 +375,10 @@ export function OpportunityCard({
       role="button"
       tabIndex={0}
       onClick={handleCardClick}
-      className={`group relative bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors ${
+      className={`group relative rounded-lg border p-4 transition-colors ${
         isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-      } ${dragHandleProps?.listeners ? 'touch-none' : ''}`}
+      } ${dragHandleProps?.listeners ? 'touch-none' : ''}
+      bg-white border-gray-200 hover:border-gray-300`}
       {...(isDraggable && dragHandleProps ? {
         ...dragHandleProps.attributes,
         ...dragHandleProps.listeners,
@@ -430,6 +433,7 @@ export function OpportunityCard({
             <div className="space-y-1">
               {completedOptions.map((option, index) => (
                 <div key={`${option.id}-${index}-${option.content}`} className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="text-xs font-medium text-gray-400">Option {index + 1}</span>
                   {option.isApproved ? (
                     <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

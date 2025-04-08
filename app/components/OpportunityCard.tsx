@@ -22,7 +22,7 @@ interface Operator {
   type: 'and' | 'or'
 }
 
-interface OpportunityCardProps {
+export interface OpportunityCardProps {
   id: string
   title: string
   options: Option[]
@@ -31,6 +31,11 @@ interface OpportunityCardProps {
   column: string
   onDelete: (id: string) => void
   isDraggable?: boolean
+  promotion?: {
+    type: string
+    discount: string
+    validUntil: string
+  }
 }
 
 export function OpportunityCard({ 
@@ -41,7 +46,8 @@ export function OpportunityCard({
   lastUpdated, 
   column, 
   onDelete,
-  isDraggable = false 
+  isDraggable = false,
+  promotion
 }: OpportunityCardProps) {
   const router = useRouter()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !isDraggable })
@@ -90,6 +96,43 @@ export function OpportunityCard({
     const minPrice = Math.min(...andGroupTotals)
     const maxPrice = Math.max(...andGroupTotals)
 
+    // Apply promotion discount if available
+    if (promotion) {
+      const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''))
+      const isPercentage = promotion.discount.includes('%')
+      
+      const applyDiscount = (price: number) => {
+        if (isPercentage) {
+          return price * (1 - discountAmount / 100)
+        }
+        return price - discountAmount
+      }
+
+      const discountedMinPrice = applyDiscount(minPrice)
+      const discountedMaxPrice = applyDiscount(maxPrice)
+
+      if (discountedMinPrice === discountedMaxPrice) {
+        return (
+          <div className="flex flex-col">
+            <span className="text-gray-500 line-through">${minPrice.toLocaleString()}</span>
+            <span className="text-green-600">${discountedMinPrice.toLocaleString()}</span>
+          </div>
+        )
+      }
+
+      return (
+        <div className="flex flex-col">
+          <span className="text-gray-500 line-through">
+            ${minPrice.toLocaleString()} - ${maxPrice.toLocaleString()}
+          </span>
+          <span className="text-green-600">
+            ${discountedMinPrice.toLocaleString()} - ${discountedMaxPrice.toLocaleString()}
+          </span>
+        </div>
+      )
+    }
+
+    // Original price display without promotion
     if (minPrice === maxPrice) {
       return `$${minPrice.toLocaleString()}`
     }
@@ -199,12 +242,23 @@ export function OpportunityCard({
         ))}
       </div>
 
-      {/* Price Display */}
-      {getPriceRange() && (
-        <div className={`mt-2 text-sm font-medium ${options.some(opt => opt.isApproved) ? 'text-green-600' : 'text-gray-900'}`}>
-          {getPriceRange()} {options.some(opt => opt.isApproved) ? 'approved' : ''}
+      {/* Promotion Display */}
+      {promotion && (
+        <div className="mt-2 p-2 bg-purple-50 rounded-md">
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+              {promotion.type}
+            </Badge>
+            <span className="text-sm text-purple-700 font-medium">{promotion.discount}</span>
+            <span className="text-xs text-purple-500">Valid until {new Date(promotion.validUntil).toLocaleDateString()}</span>
+          </div>
         </div>
       )}
+
+      {/* Price Display */}
+      <div className="mt-2">
+        {getPriceRange()}
+      </div>
     </div>
   )
 } 

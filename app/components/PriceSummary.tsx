@@ -24,6 +24,12 @@ interface Option {
     materials?: string[]
     sections?: string[]
   }
+  showAsLowAsPrice?: boolean
+  promotion?: {
+    type: string
+    discount: string
+    validUntil: string
+  }
 }
 
 interface Operator {
@@ -72,15 +78,29 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
   // Calculate total price for each "And" group
   const andGroupTotals = andGroups.map(group => {
     const total = group.reduce((sum, option) => {
-      const price = option.price ?? option.details?.price ?? 0
-      return sum + price
-    }, 0)
+      let price = option.price ?? option.details?.price ?? 0;
+      
+      // Apply promotion discount if exists
+      if (option.promotion) {
+        const discountAmount = parseFloat(option.promotion.discount.replace(/[^0-9.]/g, ''))
+        const isPercentage = option.promotion.discount.includes('%')
+        
+        if (isPercentage) {
+          price = price * (1 - discountAmount / 100)
+        } else {
+          price = price - discountAmount
+        }
+      }
+      
+      return sum + price;
+    }, 0);
+
     return {
       options: group,
       total,
       monthlyPayment: calculateMonthlyPayment(total),
       allApproved: group.every(opt => opt.isApproved)
-    }
+    };
   })
 
   const handleEditPackage = (index: number) => {
@@ -175,26 +195,57 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
                   )}
                 </div>
                 <div className="text-sm text-gray-500 space-y-1">
-                  {group.options.map((opt, optIndex) => (
-                    <div key={opt.id} className="flex items-center gap-2">
-                      <span>{opt.content}</span>
-                      {opt.isApproved && (
-                        <Badge variant="secondary" className="text-[10px] font-normal bg-green-100 text-green-700 hover:bg-green-100">
-                          Approved
-                        </Badge>
-                      )}
-                      {optIndex < group.options.length - 1 && (
-                        <span className="text-gray-400">+</span>
-                      )}
-                    </div>
-                  ))}
+                  {group.options.map((opt, optIndex) => {
+                    const originalPrice = opt.price ?? opt.details?.price ?? 0;
+                    const hasPromotion = !!opt.promotion;
+                    let discountedPrice = originalPrice;
+                    let discount = 0;
+
+                    if (hasPromotion) {
+                      const discountAmount = parseFloat(opt.promotion!.discount.replace(/[^0-9.]/g, ''))
+                      const isPercentage = opt.promotion!.discount.includes('%')
+                      
+                      if (isPercentage) {
+                        discount = (originalPrice * discountAmount) / 100
+                      } else {
+                        discount = discountAmount
+                      }
+                      discountedPrice = originalPrice - discount
+                    }
+
+                    return (
+                      <div key={opt.id} className="flex items-center gap-2">
+                        <span>{opt.content}</span>
+                        {opt.isApproved && (
+                          <Badge variant="secondary" className="text-[10px] font-normal bg-green-100 text-green-700 hover:bg-green-100">
+                            Approved
+                          </Badge>
+                        )}
+                        {hasPromotion && (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-[10px] font-normal bg-purple-100 text-purple-700 hover:bg-purple-100">
+                              {opt.promotion!.type}
+                            </Badge>
+                            <span className="text-sm text-gray-500">
+                              (${originalPrice.toLocaleString()} → ${discountedPrice.toLocaleString()})
+                            </span>
+                          </div>
+                        )}
+                        {optIndex < group.options.length - 1 && (
+                          <span className="text-gray-400">+</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <div className="flex-shrink-0">
                 <div className="text-lg font-bold">${group.total.toLocaleString()}</div>
-                <div className="text-sm text-gray-500">
-                  As low as ${group.monthlyPayment.toLocaleString()}/month
-                </div>
+                {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                  <div className="text-sm text-gray-500">
+                    As low as ${group.monthlyPayment.toLocaleString()}/month
+                  </div>
+                )}
               </div>
             </div>
 

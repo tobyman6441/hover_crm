@@ -5,7 +5,6 @@ export interface Column {
 
 export const defaultColumns: Column[] = [
   { id: 'drafts', title: 'Drafts' },
-  { id: 'presented', title: 'Presented to customer' },
-  { id: 'waiting', title: 'Waiting for decision' },
+  { id: 'presented', title: 'Presented' },
   { id: 'approved', title: 'Approved' }
 ] 

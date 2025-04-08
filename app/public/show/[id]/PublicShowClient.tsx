@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { calculateMonthlyPayment } from '@/app/utils/calculations';
@@ -10,19 +10,36 @@ interface Option {
   content: string;
   isComplete: boolean;
   isApproved?: boolean;
-  details?: {
+  title: string;
+  description: string;
+  price?: number;
+  afterImage: string;
+  beforeImage?: string;
+  materials?: Array<{
+    id: number;
     title: string;
     description: string;
+  }>;
+  sections?: Array<{
+    id: number;
+    title: string;
+    content: string;
+  }>;
+  hasCalculations?: boolean;
+  showAsLowAsPrice?: boolean;
+  details?: {
     price: number;
+    title: string;
+    description: string;
     afterImage: string;
-    beforeImage: string;
+    beforeImage?: string;
     address?: string;
-    materials: Array<{
+    materials?: Array<{
       id: number;
       title: string;
       description: string;
     }>;
-    sections: Array<{
+    sections?: Array<{
       id: number;
       title: string;
       content: string;
@@ -185,17 +202,21 @@ export default function PublicShowClient({ id }: PageProps) {
                         <div className="text-3xl font-bold">
                           ${option.details.price.toLocaleString()}
                         </div>
-                        <div className="text-lg text-gray-600">
-                          As low as ${calculateMonthlyPayment(
-                            option.details.price,
-                            option.details.financeSettings?.apr || 6.99,
-                            option.details.financeSettings?.termLength || 60
-                          ).toLocaleString()}/month
-                        </div>
-                        {option.details.financeSettings && (
-                          <div className="text-sm text-gray-500">
-                            {option.details.financeSettings.apr}% APR for {option.details.financeSettings.termLength} months
-                          </div>
+                        {option.showAsLowAsPrice !== false && (
+                          <>
+                            <div className="text-lg text-gray-600">
+                              As low as ${calculateMonthlyPayment(
+                                option.details.price,
+                                option.details.financeSettings?.apr || 6.99,
+                                option.details.financeSettings?.termLength || 60
+                              ).toLocaleString()}/month
+                            </div>
+                            {option.details.financeSettings && (
+                              <div className="text-sm text-gray-500">
+                                {option.details.financeSettings.apr}% APR for {option.details.financeSettings.termLength} months
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
@@ -16,6 +16,16 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Filter } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu"
+import { SaveTemplateDialog } from './components/save-template-dialog'
+import type { OpportunityCardProps } from '@/app/components/OpportunityCard'
 
 interface Column {
   id: string
@@ -48,12 +58,16 @@ interface Opportunity {
   operators: Operator[]
   lastUpdated: string
   column: string
+  promotion?: {
+    type: string
+    discount: string
+    validUntil: string
+  }
 }
 
 const initialColumns: Column[] = [
   { id: 'drafts', title: 'Drafts' },
-  { id: 'presented', title: 'Presented to customer' },
-  { id: 'waiting', title: 'Waiting for decision' },
+  { id: 'presented', title: 'Presented' },
   { id: 'approved', title: 'Approved' }
 ]
 
@@ -78,6 +92,9 @@ export default function KanbanView() {
     options: {}
   })
   const [sortBy, setSortBy] = useState('price-asc')
+  const [isAddingOpportunity, setIsAddingOpportunity] = useState(false)
+  const [isEditingOpportunity, setIsEditingOpportunity] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<{ id: string; name: string; data: Opportunity }[]>([])
 
   // Filter opportunities based on search query
   const filteredOpportunities = opportunities.filter(opportunity => {
@@ -296,25 +313,7 @@ export default function KanbanView() {
   }
 
   const handleAddOpportunity = () => {
-    const newId = Math.random().toString(36).substr(2, 9)
-    const opportunityData = {
-      id: newId,
-      title: "New Opportunity",
-      options: [],
-      operators: [],
-      lastUpdated: new Date().toISOString(),
-      column: "drafts"
-    }
-
-    // Update state first
-    const updatedOpportunities = [...opportunities, opportunityData]
-    setOpportunities(updatedOpportunities)
-
-    // Save to localStorage
-    localStorage.setItem('opportunities', JSON.stringify(updatedOpportunities))
-    
-    // Navigate to the opportunity page
-    router.push(`/opportunity/${newId}`)
+    router.push('/new-opportunity')
   }
 
   const handleDeleteOpportunity = (id: string) => {
@@ -334,8 +333,80 @@ export default function KanbanView() {
     }
   }
 
+  const handleCreateBlankOpportunity = () => {
+    const newId = Math.random().toString(36).substr(2, 9)
+    const opportunityData = {
+      id: newId,
+      title: "New Opportunity",
+      options: [],
+      operators: [],
+      lastUpdated: new Date().toISOString(),
+      column: "drafts"
+    }
+
+    // Get existing opportunities
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    
+    // Add new opportunity
+    opportunities.push(opportunityData)
+    
+    // Save to localStorage
+    localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    
+    // Navigate to the opportunity page
+    router.push(`/opportunity/${newId}`)
+  }
+
+  const handleSaveTemplate = (templateName: string, opportunity: Opportunity, existingTemplateId?: string) => {
+    if (existingTemplateId) {
+      // Update existing template
+      const updatedTemplates = templates.map(template => 
+        template.id === existingTemplateId
+          ? { ...template, name: templateName, data: opportunity }
+          : template
+      )
+      setTemplates(updatedTemplates)
+      toast.success('Template updated successfully')
+    } else {
+      // Create new template
+      const newTemplate = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: templateName,
+        data: opportunity
+      }
+      setTemplates([...templates, newTemplate])
+      toast.success('Template saved successfully')
+    }
+  }
+
+  const handleCreateFromTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId)
+    if (!template) return
+
+    const newId = Math.random().toString(36).substr(2, 9)
+    const opportunityData = {
+      ...template.data,
+      id: newId,
+      title: `New ${template.name}`,
+      lastUpdated: new Date().toISOString(),
+      column: "drafts"
+    }
+
+    // Get existing opportunities
+    const opportunities = JSON.parse(localStorage.getItem('opportunities') || '[]')
+    
+    // Add new opportunity
+    opportunities.push(opportunityData)
+    
+    // Save to localStorage
+    localStorage.setItem('opportunities', JSON.stringify(opportunities))
+    
+    // Navigate to the opportunity page
+    router.push(`/opportunity/${newId}`)
+  }
+
   return (
-    <main className="container mx-auto p-4 h-screen flex flex-col">
+    <main className={`container mx-auto p-4 h-screen flex flex-col`}>
       <nav className="flex flex-row items-center justify-between mb-4 sm:mb-8 gap-4">
         <div className="h-6 sm:h-8 w-16 sm:w-24 relative">
           <Image
@@ -350,7 +421,7 @@ export default function KanbanView() {
           <div className="relative">
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="w-8 h-8 sm:w-14 sm:h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors"
+              className="w-8 h-8 sm:w-14 sm:h-14 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
             >
               <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -364,7 +435,7 @@ export default function KanbanView() {
                     placeholder="Search opportunities..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-gray-200"
+                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-gray-200 bg-white text-gray-900"
                     autoFocus
                   />
                   <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -379,20 +450,60 @@ export default function KanbanView() {
               </div>
             )}
           </div>
-          <button className="h-8 sm:h-14 px-3 sm:px-8 bg-[#F7F7F7] rounded-full text-black hover:bg-gray-100 transition-colors font-medium text-xs sm:text-base">
+          <button className="h-8 sm:h-14 px-3 sm:px-8 bg-gray-100 rounded-full text-gray-900 hover:bg-gray-200 transition-colors font-medium text-xs sm:text-base">
             Schedule demo
           </button>
-          <button className="h-8 sm:h-14 px-3 sm:px-8 bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors font-medium text-xs sm:text-base flex items-center gap-2">
-            Add
-            <svg className="w-3 h-3 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-          <button className="w-8 h-8 sm:w-14 sm:h-14 flex items-center justify-center bg-[#F7F7F7] rounded-full hover:bg-gray-100 transition-colors">
-            <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className="h-8 sm:h-14 px-3 sm:px-8 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors font-medium text-xs sm:text-base flex items-center gap-2 text-gray-900"
+              >
+                Add
+                <svg className="w-3 h-3 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleCreateBlankOpportunity}>
+                + Blank opportunity
+              </DropdownMenuItem>
+              <SaveTemplateDialog 
+                onSave={handleSaveTemplate} 
+                opportunity={{
+                  id: '',
+                  title: 'New Opportunity',
+                  options: [],
+                  operators: [],
+                  lastUpdated: new Date().toISOString(),
+                  column: 'drafts'
+                }}
+                existingTemplates={templates}
+              >
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  Save as template
+                </DropdownMenuItem>
+              </SaveTemplateDialog>
+              {templates.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-gray-500 px-2">
+                    Templates
+                  </DropdownMenuLabel>
+                  {templates.map(template => (
+                    <DropdownMenuItem key={template.id} onClick={() => handleCreateFromTemplate(template.id)}>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" />
+                        </svg>
+                        {template.name}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
 
@@ -412,7 +523,7 @@ export default function KanbanView() {
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'kanban'
                   ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  : 'bg-gray-100 hover:bg-gray-200'
               }`}
             >
               Kanban View
@@ -422,7 +533,7 @@ export default function KanbanView() {
               className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'grid'
                   ? 'bg-black text-white'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  : 'bg-gray-100 hover:bg-gray-200'
               }`}
             >
               Grid View
@@ -557,15 +668,26 @@ export default function KanbanView() {
             </Select>
           </div>
         </div>
-        <button
-          onClick={handleAddOpportunity}
-          className="px-3 sm:px-4 py-2 bg-black text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center"
-        >
-          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>New Opportunity</span>
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="px-3 sm:px-4 py-2 bg-black text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center"
+            >
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Opportunity</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleCreateBlankOpportunity}>
+              + Blank opportunity
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/new-opportunity')}>
+              Select from template
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {viewMode === 'kanban' ? (
@@ -628,6 +750,7 @@ export default function KanbanView() {
                               column={column.title}
                               onDelete={handleDeleteOpportunity}
                               isDraggable={true}
+                              promotion={opportunity.promotion}
                             />
                           </DraggableOpportunity>
                         ))}
@@ -702,6 +825,7 @@ export default function KanbanView() {
                   column={columns.find(col => col.id === activeDraggedOpportunity.column)?.title || ''}
                   onDelete={handleDeleteOpportunity}
                   isDraggable={true}
+                  promotion={activeDraggedOpportunity.promotion}
                 />
               </div>
             )}
@@ -722,6 +846,7 @@ export default function KanbanView() {
                 column={column?.title || opportunity.column}
                 onDelete={handleDeleteOpportunity}
                 isDraggable={false}
+                promotion={opportunity.promotion}
               />
             )
           })}
@@ -735,15 +860,26 @@ export default function KanbanView() {
               </div>
               <h3 className="text-base sm:text-lg font-medium text-gray-900">No opportunities yet</h3>
               <p className="mt-1 text-xs sm:text-sm text-gray-500">Get started by creating a new sales opportunity.</p>
-              <button
-                onClick={handleAddOpportunity}
-                className="mt-4 px-3 sm:px-4 py-2 bg-black text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2"
-              >
-                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>New Opportunity</span>
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="mt-4 px-3 sm:px-4 py-2 bg-black text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors inline-flex items-center gap-2"
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>New Opportunity</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleCreateBlankOpportunity}>
+                    + Blank opportunity
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/new-opportunity')}>
+                    Select from template
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>

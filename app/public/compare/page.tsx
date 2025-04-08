@@ -12,19 +12,36 @@ interface Option {
   content: string
   isComplete: boolean
   isApproved?: boolean
-  details?: {
+  title: string
+  description: string
+  price?: number
+  afterImage: string
+  beforeImage?: string
+  materials?: Array<{
+    id: number
     title: string
     description: string
+  }>
+  sections?: Array<{
+    id: number
+    title: string
+    content: string
+  }>
+  hasCalculations?: boolean
+  showAsLowAsPrice?: boolean
+  details?: {
     price: number
+    title: string
+    description: string
     afterImage: string
-    beforeImage: string
+    beforeImage?: string
     address?: string
-    materials: Array<{
+    materials?: Array<{
       id: number
       title: string
       description: string
     }>
-    sections: Array<{
+    sections?: Array<{
       id: number
       title: string
       content: string
@@ -33,6 +50,7 @@ interface Option {
       apr: number
       termLength: number
     }
+    showAsLowAsPrice?: boolean
   }
 }
 
@@ -218,7 +236,8 @@ export default function PublicComparePage() {
             beforeImage: opt.details.beforeImage || '',
             materials: opt.details.materials || [],
             sections: opt.details.sections || [],
-            ...(opt.details.financeSettings && { financeSettings: opt.details.financeSettings })
+            ...(opt.details.financeSettings && { financeSettings: opt.details.financeSettings }),
+            showAsLowAsPrice: opt.details.showAsLowAsPrice
           } : undefined
         })))
         setOperators(data.operators.slice(0, uniqueOptions.length - 1))
@@ -269,7 +288,8 @@ export default function PublicComparePage() {
       options: group,
       total,
       monthlyPayment: calculateMonthlyPayment(total),
-      allApproved: group.every(opt => opt.isApproved)
+      allApproved: group.every(opt => opt.isApproved),
+      showAsLowAsPrice: group.some(opt => opt.details?.showAsLowAsPrice !== false)
     }
   })
 
@@ -373,9 +393,11 @@ export default function PublicComparePage() {
                     ))}
                     <div className="pt-4 border-t">
                       <div className="text-2xl font-bold">${group.total.toLocaleString()}</div>
-                      <div className="text-sm text-gray-500">
-                        As low as ${group.monthlyPayment.toLocaleString()}/month
-                      </div>
+                      {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                        <div className="text-sm text-gray-500">
+                          As low as ${group.monthlyPayment.toLocaleString()}/month
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -452,9 +474,11 @@ export default function PublicComparePage() {
                             ))}
                             <div className="pt-4 border-t">
                               <div className="text-2xl font-bold">${group.total.toLocaleString()}</div>
-                              <div className="text-sm text-gray-500">
-                                As low as ${group.monthlyPayment.toLocaleString()}/month
-                              </div>
+                              {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                                <div className="text-sm text-gray-500">
+                                  As low as ${group.monthlyPayment.toLocaleString()}/month
+                                </div>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -556,9 +580,11 @@ export default function PublicComparePage() {
               <div className="text-2xl font-bold">
                 ${group.total.toLocaleString()}
               </div>
-              <div className="text-gray-500">
-                As low as ${group.monthlyPayment.toLocaleString()}/month
-              </div>
+              {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                <div className="text-gray-500">
+                  As low as ${group.monthlyPayment.toLocaleString()}/month
+                </div>
+              )}
             </div>
           </div>
         ))}
