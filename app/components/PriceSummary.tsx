@@ -150,9 +150,10 @@ export function PriceSummary({ options, operators }: PriceSummaryProps) {
               operators: alignedOperators,
               packageNames
             }
-            const encodedData = encodeURIComponent(JSON.stringify(data))
-            const link = `${window.location.origin}/public/compare?data=${encodedData}`
-            window.open(link, '_blank', 'noopener,noreferrer')
+            // Use btoa (base64 encoding) to safely encode the JSON data
+            const encodedData = btoa(JSON.stringify(data));
+            const link = `${window.location.origin}/public/compare?data=${encodedData}`;
+            window.open(link, '_blank', 'noopener,noreferrer');
           }}
           className="px-3 py-1.5 rounded-full text-xs font-medium bg-black text-white hover:bg-gray-900 flex items-center gap-1.5"
         >

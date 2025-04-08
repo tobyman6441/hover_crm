@@ -91,7 +91,10 @@ export default function PublicShowClient({ id }: PageProps) {
     
     if (dataParam) {
       try {
-        const data = JSON.parse(decodeURIComponent(dataParam));
+        // Decode using atob (base64 decoding) instead of decodeURIComponent
+        const jsonString = atob(dataParam);
+        const data = JSON.parse(jsonString);
+        
         setShowData(data);
         if (data.options.length > 0) {
           setSelectedOptionId(data.options[0].id);
@@ -218,15 +221,25 @@ export default function PublicShowClient({ id }: PageProps) {
                         {option.promotion ? (
                           <>
                             <div className="flex items-center gap-2">
-                              <span className="text-2xl text-gray-500 line-through">
-                                ${option.details.price.toLocaleString()}
-                              </span>
                               <Badge variant="secondary" className="bg-purple-100 text-purple-700">
                                 {option.promotion.type}
                               </Badge>
                             </div>
-                            <div className="text-3xl font-bold">
-                              ${(option.details.price - calculateDiscount(option.details.price, option.promotion)).toLocaleString()}
+                            <div className="flex flex-col items-center">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl text-gray-500 line-through">
+                                  ${option.details.price.toLocaleString()}
+                                </span>
+                                <span className="text-3xl font-bold">
+                                  ${(option.details.price - calculateDiscount(option.details.price, option.promotion)).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-green-600">
+                                <span className="font-medium">Save {option.promotion.discount}</span>
+                                <span className="text-sm text-gray-500">
+                                  (Valid until {new Date(option.promotion.validUntil).toLocaleDateString()})
+                                </span>
+                              </div>
                             </div>
                           </>
                         ) : (

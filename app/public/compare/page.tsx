@@ -52,6 +52,11 @@ interface Option {
     }
     showAsLowAsPrice?: boolean
   }
+  promotion?: {
+    type: string
+    discount: string
+    validUntil: string
+  }
 }
 
 interface Operator {
@@ -221,11 +226,15 @@ export default function PublicComparePage() {
     
     if (dataParam) {
       try {
-        const data: ComparisonData = JSON.parse(decodeURIComponent(dataParam))
+        // Decode using atob (base64 decoding) instead of decodeURIComponent
+        const jsonString = atob(dataParam);
+        const data: ComparisonData = JSON.parse(jsonString);
+
         // Ensure we don't have duplicate options
         const uniqueOptions = data.options.filter((opt, index, self) =>
           index === self.findIndex((o) => o.id === opt.id)
         )
+        
         setOptions(uniqueOptions.map(opt => ({
           ...opt,
           details: opt.details ? {
@@ -238,7 +247,8 @@ export default function PublicComparePage() {
             sections: opt.details.sections || [],
             ...(opt.details.financeSettings && { financeSettings: opt.details.financeSettings }),
             showAsLowAsPrice: opt.details.showAsLowAsPrice
-          } : undefined
+          } : undefined,
+          promotion: opt.promotion
         })))
         setOperators(data.operators.slice(0, uniqueOptions.length - 1))
         setPackageNames(data.packageNames)
@@ -281,8 +291,23 @@ export default function PublicComparePage() {
   // Calculate total price for each unique "And" group
   const andGroupTotals = uniqueGroups.map((group, index) => {
     const total = group.reduce((sum, option) => {
-      return sum + (option.details?.price || 0)
-    }, 0)
+      let price = option.details?.price || 0;
+      
+      // Apply promotion discount if exists
+      if (option.promotion) {
+        const discountAmount = parseFloat(option.promotion.discount.replace(/[^0-9.]/g, ''));
+        const isPercentage = option.promotion.discount.includes('%');
+        
+        if (isPercentage) {
+          price = price * (1 - discountAmount / 100);
+        } else {
+          price = price - discountAmount;
+        }
+      }
+      
+      return sum + price;
+    }, 0);
+    
     return {
       id: `package-${index}`,
       options: group,
@@ -323,6 +348,17 @@ export default function PublicComparePage() {
       </div>
     )
   }
+
+  // Add this helper function before the return statement
+  const calculateDiscount = (price: number, promotion: { type: string, discount: string }) => {
+    const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''));
+    const isPercentage = promotion.discount.includes('%');
+    
+    if (isPercentage) {
+      return (price * discountAmount) / 100;
+    }
+    return discountAmount;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -391,13 +427,50 @@ export default function PublicComparePage() {
                         </div>
                       </div>
                     ))}
-                    <div className="pt-4 border-t">
-                      <div className="text-2xl font-bold">${group.total.toLocaleString()}</div>
-                      {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
-                        <div className="text-sm text-gray-500">
-                          As low as ${group.monthlyPayment.toLocaleString()}/month
-                        </div>
-                      )}
+                    <div className="pt-4 border-t space-y-2">
+                      {group.options.map((opt) => {
+                        const originalPrice = opt.details?.price || 0;
+                        if (opt.promotion) {
+                          const discount = calculateDiscount(originalPrice, opt.promotion);
+                          const finalPrice = originalPrice - discount;
+                          return (
+                            <div key={`price-${opt.id}`} className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{opt.details?.title || opt.content}</span>
+                                <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                                  {opt.promotion.type}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500 line-through">${originalPrice.toLocaleString()}</span>
+                                <span className="text-sm font-medium">→</span>
+                                <span className="text-sm font-medium">${finalPrice.toLocaleString()}</span>
+                                <span className="text-xs text-green-600">
+                                  ({opt.promotion.discount} off)
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Valid until {new Date(opt.promotion.validUntil).toLocaleDateString()}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={`price-${opt.id}`} className="space-y-1">
+                            <div className="text-sm font-medium">
+                              {opt.details?.title || opt.content}: ${originalPrice.toLocaleString()}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="pt-2 border-t mt-2">
+                        <div className="text-2xl font-bold">${group.total.toLocaleString()}</div>
+                        {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                          <div className="text-sm text-gray-500">
+                            As low as ${group.monthlyPayment.toLocaleString()}/month
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -472,13 +545,50 @@ export default function PublicComparePage() {
                                 </div>
                               </div>
                             ))}
-                            <div className="pt-4 border-t">
-                              <div className="text-2xl font-bold">${group.total.toLocaleString()}</div>
-                              {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
-                                <div className="text-sm text-gray-500">
-                                  As low as ${group.monthlyPayment.toLocaleString()}/month
-                                </div>
-                              )}
+                            <div className="pt-4 border-t space-y-2">
+                              {group.options.map((opt) => {
+                                const originalPrice = opt.details?.price || 0;
+                                if (opt.promotion) {
+                                  const discount = calculateDiscount(originalPrice, opt.promotion);
+                                  const finalPrice = originalPrice - discount;
+                                  return (
+                                    <div key={`price-${opt.id}`} className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">{opt.details?.title || opt.content}</span>
+                                        <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                                          {opt.promotion.type}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500 line-through">${originalPrice.toLocaleString()}</span>
+                                        <span className="text-sm font-medium">→</span>
+                                        <span className="text-sm font-medium">${finalPrice.toLocaleString()}</span>
+                                        <span className="text-xs text-green-600">
+                                          ({opt.promotion.discount} off)
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        Valid until {new Date(opt.promotion.validUntil).toLocaleDateString()}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div key={`price-${opt.id}`} className="space-y-1">
+                                    <div className="text-sm font-medium">
+                                      {opt.details?.title || opt.content}: ${originalPrice.toLocaleString()}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div className="pt-2 border-t mt-2">
+                                <div className="text-2xl font-bold">${group.total.toLocaleString()}</div>
+                                {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                                  <div className="text-sm text-gray-500">
+                                    As low as ${group.monthlyPayment.toLocaleString()}/month
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -577,14 +687,49 @@ export default function PublicComparePage() {
             ))}
 
             <div className="print-price">
-              <div className="text-2xl font-bold">
-                ${group.total.toLocaleString()}
-              </div>
-              {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
-                <div className="text-gray-500">
-                  As low as ${group.monthlyPayment.toLocaleString()}/month
+              {group.options.map((opt) => {
+                const originalPrice = opt.details?.price || 0;
+                if (opt.promotion) {
+                  const discount = calculateDiscount(originalPrice, opt.promotion);
+                  const finalPrice = originalPrice - discount;
+                  return (
+                    <div key={`price-${opt.id}`} className="mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{opt.details?.title || opt.content}</span>
+                        <span className="text-purple-700 font-medium">{opt.promotion.type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 line-through">${originalPrice.toLocaleString()}</span>
+                        <span className="font-medium">→</span>
+                        <span className="font-medium">${finalPrice.toLocaleString()}</span>
+                        <span className="text-green-600 text-sm">
+                          ({opt.promotion.discount} off)
+                        </span>
+                      </div>
+                      <div className="text-gray-500 text-sm">
+                        Valid until {new Date(opt.promotion.validUntil).toLocaleDateString()}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={`price-${opt.id}`} className="mb-2">
+                    <div className="font-medium">
+                      {opt.details?.title || opt.content}: ${originalPrice.toLocaleString()}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="pt-2 border-t mt-4">
+                <div className="text-2xl font-bold">
+                  ${group.total.toLocaleString()}
                 </div>
-              )}
+                {group.options.some(opt => opt.showAsLowAsPrice !== false) && (
+                  <div className="text-gray-500">
+                    As low as ${group.monthlyPayment.toLocaleString()}/month
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}

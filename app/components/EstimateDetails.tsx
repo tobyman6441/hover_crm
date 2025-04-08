@@ -11,11 +11,17 @@ import { calculateMonthlyPayment } from "@/app/utils/calculations";
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { X } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Promotion {
   type: string;
   discount: string;
   validUntil: string;
+  id: string;
 }
 
 interface EstimateDetailsProps {
@@ -70,6 +76,9 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
   const [discountValue, setDiscountValue] = useState("");
   const [savedPromotions, setSavedPromotions] = useState<Promotion[]>([]);
   const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
+  const [validUntil, setValidUntil] = useState<Date>(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+  const [isCreatingPromotion, setIsCreatingPromotion] = useState(false);
+  const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null);
 
   const calculateDiscount = (price: number, promotion: Promotion) => {
     const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''))
@@ -99,7 +108,13 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
       // Set active promotion if it exists
       if (optionDetails.promotion) {
         setIsPromotionEnabled(true);
-        setActivePromotion(optionDetails.promotion);
+        // Add id to the promotion if it doesn't exist
+        const promotion = {
+          ...optionDetails.promotion,
+          id: optionDetails.promotion.id || Date.now().toString()
+        };
+        setActivePromotion(promotion);
+        setValidUntil(new Date(promotion.validUntil));
       }
     } else {
       // Reset all states when there are no optionDetails
@@ -114,6 +129,7 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
       setShowAsLowAsPrice(true);
       setIsPromotionEnabled(false);
       setActivePromotion(null);
+      setValidUntil(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
     }
   }, [optionDetails]);
 
@@ -245,21 +261,67 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
     const newPromotion: Promotion = {
       type: promotionName,
       discount: discountType === "percentage" ? `${discountValue}%` : `$${discountValue}`,
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+      validUntil: validUntil.toISOString(),
+      id: editingPromotionId || Date.now().toString() // Use existing ID or create new one
     };
 
-    setSavedPromotions([...savedPromotions, newPromotion]);
+    if (editingPromotionId) {
+      // Update existing promotion
+      setSavedPromotions(savedPromotions.map(p => 
+        p.id === editingPromotionId ? newPromotion : p
+      ));
+      setEditingPromotionId(null);
+    } else {
+      // Add new promotion
+      setSavedPromotions([...savedPromotions, newPromotion]);
+    }
+    
     setActivePromotion(newPromotion);
     setPromotionName("");
     setDiscountValue("");
+    setIsCreatingPromotion(false);
+  };
+
+  const handleEditPromotion = (promotion: Promotion) => {
+    setPromotionName(promotion.type);
+    setDiscountType(promotion.discount.includes('%') ? "percentage" : "fixed");
+    setDiscountValue(promotion.discount.replace(/[^0-9.]/g, ''));
+    setValidUntil(new Date(promotion.validUntil));
+    setEditingPromotionId(promotion.id);
+    setIsCreatingPromotion(true);
+    setActivePromotion(null);
+  };
+
+  const handleDeletePromotion = (id: string) => {
+    // Remove the promotion
+    setSavedPromotions(savedPromotions.filter(p => p.id !== id));
+    
+    // If this was the active promotion, clear it
+    if (activePromotion?.id === id) {
+      setActivePromotion(null);
+    }
+    
+    // If we were editing this promotion, cancel the edit
+    if (editingPromotionId === id) {
+      setEditingPromotionId(null);
+      setIsCreatingPromotion(false);
+      setPromotionName("");
+      setDiscountValue("");
+    }
   };
 
   const handleApplyPromotion = (promotion: Promotion) => {
     setActivePromotion(promotion);
+    setIsCreatingPromotion(false);
   };
 
   const handleRemovePromotion = () => {
     setActivePromotion(null);
+  };
+
+  const startCreatingPromotion = () => {
+    setActivePromotion(null);
+    setIsCreatingPromotion(true);
   };
 
   return (
@@ -383,102 +445,264 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
                   {/* Promotion Form */}
                   {isPromotionEnabled && (
                     <div className="space-y-4 border rounded-lg p-4">
-                      {activePromotion && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-medium">Active Promotion</h3>
-                            <Button variant="ghost" size="sm" onClick={handleRemovePromotion}>
-                              <X className="h-4 w-4" />
-                            </Button>
+                      {activePromotion ? (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium">Active Promotion</h3>
+                              <Button variant="ghost" size="sm" onClick={handleRemovePromotion}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="font-medium">{activePromotion.type}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {activePromotion.discount} off
+                              </p>
+                              <p className="text-sm font-medium text-green-600">
+                                Savings: ${calculateDiscount(price, activePromotion).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                              <p className="text-lg font-bold">
+                                Final Price: ${(price - calculateDiscount(price, activePromotion)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Valid until {new Date(activePromotion.validUntil).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <p className="font-medium">{activePromotion.type}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {activePromotion.discount} off
-                            </p>
-                            <p className="text-sm font-medium text-green-600">
-                              Savings: ${calculateDiscount(price, activePromotion).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                            <p className="text-lg font-bold">
-                              Final Price: ${(price - calculateDiscount(price, activePromotion)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Valid until {new Date(activePromotion.validUntil).toLocaleDateString()}
-                            </p>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={startCreatingPromotion}
+                            >
+                              Create New Promotion
+                            </Button>
+                            {savedPromotions.length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" className="flex-1">
+                                    Choose from Library
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80">
+                                  <div className="space-y-2">
+                                    <h3 className="font-medium">Promotion Library</h3>
+                                    <div className="space-y-2 max-h-60 overflow-auto">
+                                      {savedPromotions.map((promotion) => (
+                                        <div
+                                          key={promotion.id}
+                                          className="flex items-center justify-between p-2 border rounded"
+                                        >
+                                          <div>
+                                            <p className="font-medium">{promotion.type}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {promotion.discount} off · Valid until {new Date(promotion.validUntil).toLocaleDateString()}
+                                            </p>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              onClick={() => handleEditPromotion(promotion)}
+                                            >
+                                              Edit
+                                            </Button>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              onClick={() => handleDeletePromotion(promotion.id)}
+                                            >
+                                              <X className="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button 
+                                              variant="outline" 
+                                              size="sm" 
+                                              onClick={() => handleApplyPromotion(promotion)}
+                                            >
+                                              Apply
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
                           </div>
                         </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label htmlFor="promotionName">Promotion Name</Label>
-                        <Input
-                          id="promotionName"
-                          value={promotionName}
-                          onChange={(e) => setPromotionName(e.target.value)}
-                          placeholder="Enter promotion name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Discount Type</Label>
-                        <RadioGroup
-                          value={discountType}
-                          onValueChange={(value: "percentage" | "fixed") => setDiscountType(value)}
-                          className="flex gap-4"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="percentage" id="percentage" />
-                            <Label htmlFor="percentage">Percentage (%)</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="fixed" id="fixed" />
-                            <Label htmlFor="fixed">Fixed Amount ($)</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="discountValue">
-                          {discountType === "percentage" ? "Discount Percentage" : "Discount Amount"}
-                        </Label>
-                        <Input
-                          id="discountValue"
-                          type="number"
-                          value={discountValue}
-                          onChange={(e) => setDiscountValue(e.target.value)}
-                          placeholder={discountType === "percentage" ? "Enter percentage" : "Enter amount"}
-                        />
-                      </div>
-
-                      <Button onClick={handleSavePromotion} className="w-full">
-                        Save to Library
-                      </Button>
-
-                      {savedPromotions.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                          <h3 className="font-medium">Promotion Library</h3>
-                          <div className="space-y-2">
-                            {savedPromotions.map((promotion) => (
-                              <div
-                                key={promotion.type}
-                                className="flex items-center justify-between p-2 border rounded"
+                      ) : isCreatingPromotion ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">{editingPromotionId ? 'Edit Promotion' : 'Create New Promotion'}</h3>
+                            {savedPromotions.length > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setIsCreatingPromotion(false);
+                                  setEditingPromotionId(null);
+                                  setPromotionName("");
+                                  setDiscountValue("");
+                                }}
                               >
-                                <div>
-                                  <p className="font-medium">{promotion.type}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {promotion.discount} off
-                                  </p>
-                                </div>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => handleApplyPromotion(promotion)}
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="promotionName">Promotion Name</Label>
+                            <Input
+                              id="promotionName"
+                              value={promotionName}
+                              onChange={(e) => setPromotionName(e.target.value)}
+                              placeholder="Enter promotion name"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Discount Type</Label>
+                            <RadioGroup
+                              value={discountType}
+                              onValueChange={(value: "percentage" | "fixed") => setDiscountType(value)}
+                              className="flex gap-4"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="percentage" id="percentage" />
+                                <Label htmlFor="percentage">Percentage (%)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="fixed" id="fixed" />
+                                <Label htmlFor="fixed">Fixed Amount ($)</Label>
+                              </div>
+                            </RadioGroup>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="discountValue">
+                              {discountType === "percentage" ? "Discount Percentage" : "Discount Amount"}
+                            </Label>
+                            <Input
+                              id="discountValue"
+                              type="number"
+                              value={discountValue}
+                              onChange={(e) => setDiscountValue(e.target.value)}
+                              placeholder={discountType === "percentage" ? "Enter percentage" : "Enter amount"}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Valid Until</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !validUntil && "text-muted-foreground"
+                                  )}
                                 >
-                                  Apply to Estimate
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {validUntil ? format(validUntil, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={validUntil}
+                                  onSelect={(date) => date && setValidUntil(date)}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          <div className="flex space-x-2">
+                            <Button 
+                              onClick={handleSavePromotion} 
+                              className="flex-1"
+                              disabled={!promotionName || !discountValue}
+                            >
+                              {editingPromotionId ? 'Update & Apply' : 'Save & Apply'}
+                            </Button>
+                            {savedPromotions.length > 0 && (
+                              <Button 
+                                variant="outline" 
+                                className="flex-1"
+                                onClick={() => setIsCreatingPromotion(false)}
+                              >
+                                Choose from Library
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {savedPromotions.length > 0 ? (
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <h3 className="font-medium">Promotion Library</h3>
+                                <div className="space-y-2 max-h-60 overflow-auto">
+                                  {savedPromotions.map((promotion) => (
+                                    <div
+                                      key={promotion.id}
+                                      className="flex items-center justify-between p-2 border rounded"
+                                    >
+                                      <div>
+                                        <p className="font-medium">{promotion.type}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {promotion.discount} off · Valid until {new Date(promotion.validUntil).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          onClick={() => handleEditPromotion(promotion)}
+                                        >
+                                          Edit
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm" 
+                                          onClick={() => handleDeletePromotion(promotion.id)}
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          onClick={() => handleApplyPromotion(promotion)}
+                                        >
+                                          Apply
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex justify-center">
+                                <Button 
+                                  variant="outline"
+                                  onClick={startCreatingPromotion}
+                                >
+                                  Create New Promotion
                                 </Button>
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="text-center p-4">
+                                <h3 className="font-medium mb-2">No Saved Promotions</h3>
+                                <p className="text-sm text-muted-foreground mb-4">Create your first promotion to apply to this estimate</p>
+                                <Button onClick={startCreatingPromotion}>
+                                  Create New Promotion
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
