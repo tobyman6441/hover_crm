@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { calculateMonthlyPayment } from '@/app/utils/calculations';
+import { Badge } from "@/components/ui/badge";
 
 interface Option {
   id: number;
@@ -27,6 +28,11 @@ interface Option {
   }>;
   hasCalculations?: boolean;
   showAsLowAsPrice?: boolean;
+  promotion?: {
+    type: string;
+    discount: string;
+    validUntil: string;
+  };
   details?: {
     price: number;
     title: string;
@@ -67,6 +73,16 @@ export default function PublicShowClient({ id }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
   const [isSliderVisible, setIsSliderVisible] = useState(false);
+
+  const calculateDiscount = (price: number, promotion: { type: string, discount: string }) => {
+    const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''))
+    const isPercentage = promotion.discount.includes('%')
+    
+    if (isPercentage) {
+      return (price * discountAmount) / 100
+    }
+    return discountAmount
+  }
 
   useEffect(() => {
     // Get data from URL parameters
@@ -199,14 +215,32 @@ export default function PublicShowClient({ id }: PageProps) {
                   {option.details?.price && (
                     <div className="border-t pt-6">
                       <div className="flex flex-col items-center gap-4">
-                        <div className="text-3xl font-bold">
-                          ${option.details.price.toLocaleString()}
-                        </div>
+                        {option.promotion ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl text-gray-500 line-through">
+                                ${option.details.price.toLocaleString()}
+                              </span>
+                              <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                                {option.promotion.type}
+                              </Badge>
+                            </div>
+                            <div className="text-3xl font-bold">
+                              ${(option.details.price - calculateDiscount(option.details.price, option.promotion)).toLocaleString()}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-3xl font-bold">
+                            ${option.details.price.toLocaleString()}
+                          </div>
+                        )}
                         {option.showAsLowAsPrice !== false && (
                           <>
                             <div className="text-lg text-gray-600">
                               As low as ${calculateMonthlyPayment(
-                                option.details.price,
+                                option.promotion 
+                                  ? option.details.price - calculateDiscount(option.details.price, option.promotion)
+                                  : option.details.price,
                                 option.details.financeSettings?.apr || 6.99,
                                 option.details.financeSettings?.termLength || 60
                               ).toLocaleString()}/month
