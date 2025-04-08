@@ -16,12 +16,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FinanceOptionDialog } from './FinanceOptionDialog';
 
 interface Promotion {
   type: string;
   discount: string;
   validUntil: string;
   id: string;
+}
+
+interface FinancingOption {
+  id: string;
+  name: string;
+  apr: number;
+  termLength: number;
 }
 
 interface EstimateDetailsProps {
@@ -39,6 +47,7 @@ interface EstimateDetailsProps {
     isApproved?: boolean;
     showAsLowAsPrice?: boolean;
     promotion?: Promotion;
+    financingOption?: FinancingOption;
   };
   onSave: (details: {
     title: string;
@@ -51,6 +60,7 @@ interface EstimateDetailsProps {
     isApproved?: boolean;
     showAsLowAsPrice?: boolean;
     promotion?: Promotion;
+    financingOption?: FinancingOption;
   }) => void;
 }
 
@@ -80,6 +90,28 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
   const [isCreatingPromotion, setIsCreatingPromotion] = useState(false);
   const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null);
 
+  // Financing options states
+  const [isFinancingLibraryOpen, setIsFinancingLibraryOpen] = useState(false);
+  const [financingOptionName, setFinancingOptionName] = useState("");
+  const [savedFinancingOptions, setSavedFinancingOptions] = useState<FinancingOption[]>([]);
+  const [activeFinancingOption, setActiveFinancingOption] = useState<FinancingOption | null>(null);
+  const [isCreatingFinancingOption, setIsCreatingFinancingOption] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showFinanceOptionDialog, setShowFinanceOptionDialog] = useState(false);
+
+  // Load saved financing options from localStorage on initial render
+  useEffect(() => {
+    const savedOptions = localStorage.getItem('financingOptions');
+    if (savedOptions) {
+      try {
+        setSavedFinancingOptions(JSON.parse(savedOptions));
+      } catch (error) {
+        console.error('Failed to parse saved financing options:', error);
+      }
+    }
+  }, []);
+
   const calculateDiscount = (price: number, promotion: Promotion) => {
     const discountAmount = parseFloat(promotion.discount.replace(/[^0-9.]/g, ''))
     const isPercentage = promotion.discount.includes('%')
@@ -91,7 +123,13 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
   };
 
   const finalPrice = activePromotion ? price - calculateDiscount(price, activePromotion) : price;
-  const monthlyPayment = calculateMonthlyPayment(finalPrice, apr, termLength);
+  const monthlyPayment = calculateMonthlyPayment(finalPrice, activeFinancingOption?.apr || apr, activeFinancingOption?.termLength || termLength);
+
+  // Force a UI update when financing parameters change
+  useEffect(() => {
+    // No need to do anything, React will re-render when apr or termLength changes
+    // This is just to make it explicit that we want the UI to update
+  }, [apr, termLength]);
 
   // Update local state when optionDetails changes
   useEffect(() => {
@@ -116,6 +154,12 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
         setActivePromotion(promotion);
         setValidUntil(new Date(promotion.validUntil));
       }
+      // Set active financing option if it exists
+      if (optionDetails.financingOption) {
+        setActiveFinancingOption(optionDetails.financingOption);
+        setApr(optionDetails.financingOption.apr);
+        setTermLength(optionDetails.financingOption.termLength);
+      }
     } else {
       // Reset all states when there are no optionDetails
       setTitle("");
@@ -130,6 +174,9 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
       setIsPromotionEnabled(false);
       setActivePromotion(null);
       setValidUntil(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+      setActiveFinancingOption(null);
+      setApr(6.99);
+      setTermLength(60);
     }
   }, [optionDetails]);
 
@@ -206,7 +253,8 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
       sections: [],
       hasCalculations: isCalculated,
       showAsLowAsPrice,
-      promotion: activePromotion || undefined
+      promotion: activePromotion || undefined,
+      financingOption: activeFinancingOption || undefined
     });
     onClose();
   };
@@ -324,10 +372,121 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
     setIsCreatingPromotion(true);
   };
 
+  const handleSaveFinancingOption = () => {
+    if (!financingOptionName) return;
+
+    const newOption: FinancingOption = {
+      id: Date.now().toString(),
+      name: financingOptionName,
+      apr,
+      termLength,
+    };
+
+    const updatedOptions = [...savedFinancingOptions, newOption];
+    setSavedFinancingOptions(updatedOptions);
+    // Save to localStorage
+    localStorage.setItem('financingOptions', JSON.stringify(updatedOptions));
+    setFinancingOptionName("");
+    setIsCreatingFinancingOption(false);
+    
+    // Show success message
+    setSuccessMessage(`"${newOption.name}" added to financing options library`);
+    setShowSuccessMessage(true);
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
+  };
+
+  const handleApplyFinancingOption = (option: FinancingOption) => {
+    setActiveFinancingOption(option);
+    setApr(option.apr);
+    setTermLength(option.termLength);
+    setIsFinancingLibraryOpen(false);
+  };
+
+  const handleRemoveFinancingOption = () => {
+    setActiveFinancingOption(null);
+  };
+
+  const startCreatingFinancingOption = () => {
+    setIsCreatingFinancingOption(true);
+    setIsFinancingLibraryOpen(false);
+  };
+
+  const handleDeleteFinancingOption = (id: string) => {
+    // Find the option that's being deleted to show its name in the message
+    const optionToDelete = savedFinancingOptions.find(option => option.id === id);
+    
+    // Remove the option from the saved options
+    const updatedOptions = savedFinancingOptions.filter(option => option.id !== id);
+    setSavedFinancingOptions(updatedOptions);
+    
+    // Update localStorage
+    localStorage.setItem('financingOptions', JSON.stringify(updatedOptions));
+    
+    // If this was the active option, clear it
+    if (activeFinancingOption?.id === id) {
+      setActiveFinancingOption(null);
+    }
+    
+    // Show success message
+    if (optionToDelete) {
+      setSuccessMessage(`"${optionToDelete.name}" removed from financing options library`);
+      setShowSuccessMessage(true);
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 3000);
+    }
+  };
+
+  // Add an edit function for the dialog screen seen in the screenshot
+  const handleSaveFinancingOptionFromDialog = () => {
+    setIsCreatingFinancingOption(true);
+  };
+
+  const handleSaveFinanceOptionsDialog = (details: any) => {
+    if (details.financingOption) {
+      setApr(details.financingOption.apr);
+      setTermLength(details.financingOption.termLength);
+      
+      // If this is a saved financing option with a name, we should set it as the active option
+      if (details.financingOption.name) {
+        const option = {
+          id: details.financingOption.id || Date.now().toString(),
+          name: details.financingOption.name,
+          apr: details.financingOption.apr,
+          termLength: details.financingOption.termLength
+        };
+        setActiveFinancingOption(option);
+      } else {
+        // If it's just APR and term length changes without saving as a template
+        setActiveFinancingOption(null);
+      }
+    }
+    
+    setShowAsLowAsPrice(details.showAsLowAsPrice);
+    setShowFinanceOptionDialog(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] p-6">
         <DialogTitle className="sr-only">Estimate Details</DialogTitle>
+        
+        {/* Success notification */}
+        {showSuccessMessage && (
+          <div className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-md">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>{successMessage}</span>
+            </div>
+          </div>
+        )}
+        
         <div className="flex flex-col h-full space-y-6 overflow-hidden">
           {/* Top Action Button */}
           <div className="flex justify-between items-center flex-shrink-0">
@@ -715,46 +874,173 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
                         checked={showAsLowAsPrice}
                         onCheckedChange={setShowAsLowAsPrice}
                       />
-                      <Label className="text-sm font-medium">Show "As Low As" Price</Label>
+                      <Label className="text-sm font-medium">Apply Financing</Label>
                     </div>
                     
                     {showAsLowAsPrice && (
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-600">
-                          As low as ${monthlyPayment.toLocaleString('en-US', { maximumFractionDigits: 0 })}/month
-                        </div>
-                        <button
-                          onClick={() => {/* Show financing settings */}}
-                          className="text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          (Edit)
-                        </button>
+                      <div 
+                        className="text-sm text-gray-600 cursor-pointer hover:underline"
+                        onClick={() => setShowFinanceOptionDialog(true)}
+                        key={`monthly-payment-${apr}-${termLength}`}
+                      >
+                        As low as ${monthlyPayment.toLocaleString('en-US', { maximumFractionDigits: 0 })}/month
                       </div>
                     )}
                   </div>
 
-                  {showAsLowAsPrice && (
+                  {showAsLowAsPrice && isFinancingLibraryOpen && (
+                    <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Financing Options Library</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setIsFinancingLibraryOpen(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      {savedFinancingOptions.length > 0 ? (
+                        <div className="space-y-2">
+                          {savedFinancingOptions.map((option) => (
+                            <div
+                              key={option.id}
+                              className="flex items-center justify-between p-2 border rounded bg-white"
+                            >
+                              <div>
+                                <p className="font-medium">{option.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {option.apr}% APR for {option.termLength} months
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  As low as ${calculateMonthlyPayment(finalPrice, option.apr, option.termLength).toLocaleString('en-US', { maximumFractionDigits: 0 })}/month
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleDeleteFinancingOption(option.id)}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleApplyFinancingOption(option)}
+                                >
+                                  Apply
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No saved financing options yet.</p>
+                      )}
+                      
+                      <Button 
+                        onClick={startCreatingFinancingOption} 
+                        variant="outline" 
+                        className="w-full"
+                      >
+                        Create New Option
+                      </Button>
+                    </div>
+                  )}
+
+                  {showAsLowAsPrice && isCreatingFinancingOption && (
+                    <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Create Financing Option</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setIsCreatingFinancingOption(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="financingOptionName">Option Name</Label>
+                          <Input
+                            id="financingOptionName"
+                            value={financingOptionName}
+                            onChange={(e) => setFinancingOptionName(e.target.value)}
+                            placeholder="Enter financing option name"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">APR %</Label>
+                          <Input
+                            type="number"
+                            value={apr}
+                            onChange={(e) => {
+                              const newApr = Number(e.target.value);
+                              setApr(newApr);
+                              // Monthly payment will be recalculated automatically as it depends on apr
+                            }}
+                            placeholder="APR %"
+                            step="0.01"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Term Length (months)</Label>
+                          <Input
+                            type="number"
+                            value={termLength}
+                            onChange={(e) => {
+                              const newTermLength = Number(e.target.value);
+                              setTermLength(newTermLength);
+                              // Monthly payment will be recalculated automatically as it depends on termLength
+                            }}
+                            placeholder="Term length"
+                          />
+                        </div>
+                        
+                        <Button onClick={handleSaveFinancingOption} className="w-full">
+                          Save to Library
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showAsLowAsPrice && !isFinancingLibraryOpen && !isCreatingFinancingOption && (
                     <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="space-y-2">
-                        <Label className="text-sm">APR %</Label>
-                        <Input
-                          type="number"
-                          value={apr}
-                          onChange={(e) => setApr(Number(e.target.value))}
-                          placeholder="APR %"
-                          className="w-24"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Term Length</Label>
-                        <Input
-                          type="number"
-                          value={termLength}
-                          onChange={(e) => setTermLength(Number(e.target.value))}
-                          placeholder="Term length"
-                          className="w-24"
-                        />
-                      </div>
+                      {activeFinancingOption ? (
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-medium">Active Financing Option</h3>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={handleRemoveFinancingOption}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div>
+                            <p className="font-medium">{activeFinancingOption.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {activeFinancingOption.apr}% APR for {activeFinancingOption.termLength} months
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1 text-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowFinanceOptionDialog(true)}
+                          >
+                            Configure Financing Options
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -816,6 +1102,17 @@ export function EstimateDetails({ isOpen, onClose, onCalculate, optionDetails, o
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Finance Option Dialog */}
+        <FinanceOptionDialog
+          isOpen={showFinanceOptionDialog}
+          onClose={() => setShowFinanceOptionDialog(false)}
+          onSave={handleSaveFinanceOptionsDialog}
+          price={finalPrice}
+          initialApr={apr}
+          initialTermLength={termLength}
+          activeTemplateId={activeFinancingOption?.id}
+        />
       </DialogContent>
     </Dialog>
   );

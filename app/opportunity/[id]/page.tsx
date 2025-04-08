@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import Image from 'next/image'
-import { Search, Filter } from 'lucide-react'
+import { Search, Filter, PlusCircle, X, AlignJustify, ChevronLeft, ChevronRight, Check, Edit, Trash2, Copy, Flag, Clipboard, ChevronDown, SlidersHorizontal, History } from 'lucide-react'
 import {
   Select,
   SelectContent,

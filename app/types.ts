@@ -11,6 +11,7 @@ export interface Option {
   sections?: string[]
   hasCalculations?: boolean
   showAsLowAsPrice?: boolean
+  financingOption?: FinancingOption
   details?: {
     title: string
     description: string
@@ -31,6 +32,13 @@ export interface Operator {
   type: 'and' | 'or'
 }
 
+export interface FinancingOption {
+  id: string
+  name: string
+  apr: number
+  termLength: number
+}
+
 export interface Opportunity {
   id: string
   title: string
@@ -43,4 +51,5 @@ export interface Opportunity {
     discount: string
     validUntil: string
   }
+  financingOption?: FinancingOption
 } 
