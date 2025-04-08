@@ -323,6 +323,14 @@ export function OpportunityCard({
 
   const completedOptions = options.filter(option => option.isComplete)
 
+  // Calculate days in stage
+  const calculateDaysInStage = () => {
+    const lastUpdatedDate = new Date(lastUpdated)
+    const now = new Date()
+    const diffInDays = Math.floor((now.getTime() - lastUpdatedDate.getTime()) / (1000 * 60 * 60 * 24))
+    return diffInDays
+  }
+
   const getPriceRange = () => {
     const optionsWithPrices = options.filter(option => option.details?.price)
     if (optionsWithPrices.length === 0) return null
@@ -420,6 +428,9 @@ export function OpportunityCard({
           </h3>
           <p className="mt-1 text-xs text-gray-500">
             Last updated {new Date(lastUpdated).toLocaleDateString()}
+          </p>
+          <p className="text-xs text-gray-500">
+            Days in stage: {calculateDaysInStage()}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
